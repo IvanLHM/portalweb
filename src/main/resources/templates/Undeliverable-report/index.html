@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/layout :: html(
+        ~{::title},
+        ~{::div#content},
+        ~{::link},
+        ~{::script}
+      )">
+<head>
+    <title>Undeliverable Report - 主页</title>
+    <link th:href="@{/css/undeliverable-report/index.css}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Undeliverable Report</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group mr-2">
+                    <a th:href="@{/undeliverable-report/create}" class="btn btn-sm btn-outline-secondary">创建报告</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 报告列表 -->
+        <div class="table-responsive">
+            <table class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>报告ID</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="reportList">
+                    <!-- 报告列表内容 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script th:src="@{/js/undeliverable-report/index.js}"></script>
+</body>
+</html> 

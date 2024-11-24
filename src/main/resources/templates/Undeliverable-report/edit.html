@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/layout :: html(
+        ~{::title},
+        ~{::div#content},
+        ~{::link},
+        ~{::script}
+      )">
+<head>
+    <title>编辑报告</title>
+    <link th:href="@{/css/undeliverable-report/edit.css}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">编辑报告</h1>
+        </div>
+
+        <form id="editReportForm">
+            <div class="form-group">
+                <label for="reportType">报告类型</label>
+                <select class="form-control" id="reportType" required>
+                    <option value="daily">日报</option>
+                    <option value="weekly">周报</option>
+                    <option value="monthly">月报</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="dateRange">日期范围</label>
+                <input type="text" class="form-control" id="dateRange" required>
+            </div>
+
+            <div class="form-group">
+                <label for="comments">备注</label>
+                <textarea class="form-control" id="comments" rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">保存修改</button>
+            <a th:href="@{/undeliverable-report}" class="btn btn-secondary">返回</a>
+        </form>
+    </div>
+    
+    <script th:src="@{/js/undeliverable-report/edit.js}"></script>
+</body>
+</html> 

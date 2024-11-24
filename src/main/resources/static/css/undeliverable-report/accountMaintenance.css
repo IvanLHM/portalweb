@@ -1,0 +1,15 @@
+/* 必填字段标记 */
+.required:after {
+    content: " *";
+    color: #dc3545;
+}
+
+/* 空状态样式 */
+#emptyState {
+    padding: 3rem;
+}
+
+/* 按钮组样式 */
+.btn-group .btn {
+    margin: 0 2px;
+} 

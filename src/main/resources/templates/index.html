@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/admin-layout :: html(
+        ~{::title},
+        ~{::#main-content},
+        ~{::link},
+        ~{::script},
+        '系统主页'
+      )">
+<head>
+    <title>系统主页</title>
+    <!-- 页面特定的CSS -->
+    <link rel="stylesheet" th:href="@{/css/index.css}">
+</head>
+<body>
+    <div id="main-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- 欢迎卡片 -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h2 class="text-primary">欢迎使用管理系统</h2>
+                                    <p class="text-muted">选择左侧菜单开始使用系统功能</p>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <i class="fas fa-home fa-4x text-primary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快速入口卡片 -->
+                    <div class="row">
+                        <!-- Print Margin Report With Reason -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3>报表</h3>
+                                    <p>Print Margin Report With Reason</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <a th:href="@{/undeliverable-report/table-test}" class="small-box-footer">
+                                    进入 <i class="fas fa-arrow-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Print Margin Report -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3>报表</h3>
+                                    <p>Print Margin Report</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <a th:href="@{/undeliverable-report/single-table}" class="small-box-footer">
+                                    进入 <i class="fas fa-arrow-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Import Undelivery Record -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3>导入</h3>
+                                    <p>Import Undelivery Record</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <a th:href="@{/undeliverable-report/upload}" class="small-box-footer">
+                                    进入 <i class="fas fa-arrow-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Account Maintenance -->
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-danger">
+                                <div class="inner">
+                                    <h3>维护</h3>
+                                    <p>Account Maintenance</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="fas fa-user-cog"></i>
+                                </div>
+                                <a th:href="@{/undeliverable-report/account-maintenance}" class="small-box-footer">
+                                    进入 <i class="fas fa-arrow-circle-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 系统信息卡片 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                系统信息
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-info">
+                                            <i class="fas fa-server"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">系统版本</span>
+                                            <span class="info-box-number">v1.0.0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-success">
+                                            <i class="fas fa-clock"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">运行时间</span>
+                                            <span class="info-box-number" id="uptime">计算中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-warning">
+                                            <i class="fas fa-database"></i>
+                                        </span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">数据库状态</span>
+                                            <span class="info-box-number">正常</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面特定的JS -->
+    <script th:src="@{/js/index.js}"></script>
+</body>
+</html> 

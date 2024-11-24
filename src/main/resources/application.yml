@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: demo
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/demo
+    username: postgres
+    password: 2564
+    
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true

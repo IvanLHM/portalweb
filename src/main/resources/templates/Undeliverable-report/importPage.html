@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/admin-layout :: html(
+        ~{::title},
+        ~{::#main-content},
+        ~{::link},
+        ~{::script},
+        'Import Undelivery Record'
+      )">
+<head>
+    <title>Import Undelivery Record</title>
+    <link rel="stylesheet" th:href="@{/plugins/daterangepicker/daterangepicker.css}">
+</head>
+<body>
+    <div id="main-content">
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card card-primary card-tabs">
+                            <div class="card-header p-0 pt-1">
+                                <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="custom-tabs-one-general-tab" data-toggle="pill" 
+                                           href="#custom-tabs-one-general" role="tab" 
+                                           aria-controls="custom-tabs-one-general" aria-selected="true">
+                                            Undelivery Mobile No
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="custom-tabs-one-upload-tab" data-toggle="pill" 
+                                           href="#custom-tabs-one-upload" role="tab" 
+                                           aria-controls="custom-tabs-one-upload" aria-selected="false">
+                                            Margin Customers Database
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" id="custom-tabs-one-tabContent">
+                                    <!-- Undelivery Mobile No Tab -->
+                                    <div class="tab-pane fade show active" id="custom-tabs-one-general" role="tabpanel" 
+                                         aria-labelledby="custom-tabs-one-general-tab">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Send Time</label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">
+                                                                <i class="far fa-calendar-alt"></i>
+                                                            </span>
+                                                        </div>
+                                                        <input type="text" class="form-control float-right" id="dateInput">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <button type="button" class="btn btn-primary" id="generateBtn">
+                                                        <i class="fas fa-file-alt mr-1"></i> General Report
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Margin Customers Database Tab -->
+                                    <div class="tab-pane fade" id="custom-tabs-one-upload" role="tabpanel" 
+                                         aria-labelledby="custom-tabs-one-upload-tab">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <!-- 文件上传卡片 -->
+                                                <div class="card card-outline">
+                                                    <div class="card-header">
+                                                        <h3 class="card-title">
+                                                            <i class="fas fa-upload"></i>
+                                                            File Upload
+                                                        </h3>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="text-center">
+                                                            <div class="mt-2 mb-4">
+                                                                <i class="fas fa-file-alt fa-3x text-primary"></i>
+                                                            </div>
+                                                            <h5>Supported file format: Text (.txt)</h5>
+                                                            <form id="uploadForm" class="mt-4">
+                                                                <div class="row justify-content-center">
+                                                                    <div class="col-md-6">
+                                                                        <div class="input-group">
+                                                                            <input type="text" class="form-control" readonly placeholder="Choose file">
+                                                                            <div class="input-group-append">
+                                                                                <button type="button" class="btn btn-default" id="browseBtn">
+                                                                                    Browse
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                                                                        <div class="mt-4">
+                                                                            <button type="submit" class="btn btn-primary" id="uploadBtn">
+                                                                                <i class="fas fa-upload mr-1"></i> Upload
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 页面特定的JS -->
+    <script th:src="@{/plugins/moment/moment.min.js}"></script>
+    <script th:src="@{/plugins/daterangepicker/daterangepicker.js}"></script>
+    <script th:src="@{/js/undeliverable-report/base.js}"></script>
+    <script th:src="@{/js/undeliverable-report/importPage.js}"></script>
+</body>
+</html> 
