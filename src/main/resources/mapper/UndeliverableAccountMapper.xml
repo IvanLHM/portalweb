@@ -56,4 +56,27 @@
         DELETE FROM undeliverable_accounts 
         WHERE id = #{id}
     </delete>
+
+    <insert id="batchInsert">
+        INSERT INTO tbl_undeliverable_account (
+            id, account_number, account_name, created_at, last_update
+        ) VALUES 
+        <foreach collection="records" item="record" separator=",">
+            (
+                #{record.id},
+                #{record.accountNumber},
+                #{record.accountName},
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+            )
+        </foreach>
+    </insert>
+
+    <select id="existsByReasonId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 
+            FROM undeliverable_accounts 
+            WHERE reason_id = #{reasonId}
+        )
+    </select>
 </mapper> 

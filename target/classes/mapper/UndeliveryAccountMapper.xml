@@ -15,4 +15,7 @@
             )
         </foreach>
     </insert>
+    <select id="findAll" resultType="com.example.demo.entity.UndeliveryAccount">
+        SELECT * FROM undelivery_account
+    </select>
 </mapper> 

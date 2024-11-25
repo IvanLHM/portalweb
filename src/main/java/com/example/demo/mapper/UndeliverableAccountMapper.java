@@ -1,19 +1,17 @@
 package com.example.demo.mapper;
 
 import com.example.demo.entity.UndeliverableAccount;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
 
 @Mapper
 public interface UndeliverableAccountMapper {
-    
     List<UndeliverableAccount> findAll();
-    
-    UndeliverableAccount findById(@Param("id") Long id);
-    
+    UndeliverableAccount findById(Long id);
     int insert(UndeliverableAccount account);
-    
     int update(UndeliverableAccount account);
+    int delete(Long id);
+    int batchInsert(List<UndeliverableAccount> records);
     
-    int delete(@Param("id") Long id);
+    boolean existsByReasonId(Long reasonId);
 } 

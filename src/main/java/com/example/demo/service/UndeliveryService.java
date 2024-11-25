@@ -3,9 +3,9 @@ package com.example.demo.service;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.example.demo.entity.UndeliveryMobileNo;
-import com.example.demo.entity.UndeliveryAccount;
+import com.example.demo.entity.UndeliverableAccount;
 import com.example.demo.mapper.UndeliveryMobileNoMapper;
-import com.example.demo.mapper.UndeliveryAccountMapper;
+import com.example.demo.mapper.UndeliverableAccountMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,7 @@ public class UndeliveryService {
     private UndeliveryMobileNoMapper mobileNoMapper;
     
     @Autowired
-    private UndeliveryAccountMapper accountMapper;
+    private UndeliverableAccountMapper undeliverableAccountMapper;
     
     private final Snowflake snowflake = IdUtil.getSnowflake(1, 1);
 
@@ -58,14 +58,14 @@ public class UndeliveryService {
             throw new IllegalArgumentException("Only txt files are allowed");
         }
 
-        List<UndeliveryAccount> records = new ArrayList<>();
+        List<UndeliverableAccount> records = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\s+", 2);
                 if (parts.length == 2) {
-                    UndeliveryAccount record = new UndeliveryAccount();
+                    UndeliverableAccount record = new UndeliverableAccount();
                     record.setId(snowflake.nextId());
                     record.setAccountNumber(parts[0].trim());
                     record.setAccountName(parts[1].trim());
@@ -75,7 +75,7 @@ public class UndeliveryService {
         }
 
         if (!records.isEmpty()) {
-            accountMapper.batchInsert(records);
+            undeliverableAccountMapper.batchInsert(records);
         }
     }
 } 

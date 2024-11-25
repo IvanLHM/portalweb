@@ -1,67 +1,79 @@
 class BasePage {
   constructor() {
-    this.init();
+      this.initializeEvents();
+      this.initToastr();
   }
 
-  init() {
-    // 初始化tooltip
-    $('[data-toggle="tooltip"]').tooltip();
-    
-    // 初始化popover
-    $('[data-toggle="popover"]').popover();
-    
-    // 初始化文件输入框
-    bsCustomFileInput.init();
-
-    // 绑定事件
-    this.bindEvents();
+  initializeEvents() {
+      // 基类的事件初始化逻辑
   }
 
-  bindEvents() {
-    // 子类实现具体的事件绑定
+  initToastr() {
+      // 配置 toastr
+      if (typeof toastr !== 'undefined') {
+          toastr.options = {
+              closeButton: true,
+              progressBar: true,
+              positionClass: "toast-top-right",
+              timeOut: 3000
+          };
+      }
   }
 
   // 通用的工具方法
   formatDate(date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+      if (!date) return '';
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return '';
+      
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
-  showLoading($btn) {
-    $btn.prop('disabled', true)
-        .html('<i class="fas fa-spinner fa-spin mr-1"></i> Loading...');
+  escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return String(unsafe)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
   }
 
-  // 通用的消息提示方法
   showMessage(message, type = 'success') {
-    const alertHtml = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-    `;
-    $('#messageContainer').html(alertHtml);
+      // 如果有 toastr 就用 toastr，否则用 alert
+      if (typeof toastr !== 'undefined') {
+          toastr[type](message);
+      } else {
+          if (type === 'danger') {
+              type = 'error';
+          }
+          alert(`${type.toUpperCase()}: ${message}`);
+      }
   }
 
-  // AJAX请求封装
-  ajax(options) {
-    const defaultOptions = {
-      type: 'GET',
-      dataType: 'json',
-      contentType: 'application/json',
-      error: (xhr, status, error) => {
-        this.showMessage('操作失败：' + error, 'danger');
-      }
-    };
-    
-    $.ajax({
-      ...defaultOptions,
-      ...options
-    });
+  // 通用的操作类型样式
+  getOperationIcon(type) {
+      const icons = {
+          'CREATE': 'fas fa-plus',
+          'UPDATE': 'fas fa-edit',
+          'DELETE': 'fas fa-trash'
+      };
+      return icons[type] || 'fas fa-info';
   }
-} 
+
+  getOperationBgClass(type) {
+      const classes = {
+          'CREATE': 'bg-success',
+          'UPDATE': 'bg-info',
+          'DELETE': 'bg-danger'
+      };
+      return classes[type] || 'bg-secondary';
+  }
+}

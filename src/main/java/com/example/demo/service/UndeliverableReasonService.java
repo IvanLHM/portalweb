@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.example.demo.entity.UndeliverableReason;
 import com.example.demo.mapper.UndeliverableReasonMapper;
+import com.example.demo.mapper.UndeliverableAccountMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,9 @@ public class UndeliverableReasonService {
     
     @Autowired
     private UndeliverableReasonMapper reasonMapper;
+    
+    @Autowired
+    private UndeliverableAccountMapper undeliverableAccountMapper;
     
     private final Snowflake snowflake = IdUtil.getSnowflake(1, 1);
 
@@ -76,7 +80,6 @@ public class UndeliverableReasonService {
     }
 
     private boolean hasRelatedAccounts(Long reasonId) {
-        // TODO: 实现检查逻辑
-        return false;
+        return undeliverableAccountMapper.existsByReasonId(reasonId);
     }
 } 
