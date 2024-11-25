@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/layout :: html(
+        ~{::title},
+        ~{::div#content},
+        ~{::link},
+        ~{::script}
+      )">
+<head>
+    <title>报告预览</title>
+    <link th:href="@{/css/undeliverable-report/preview.css}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">报告预览</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group mr-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="confirmReport">确认生成</button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="editReport">返回编辑</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-content">
+            <!-- 预览内容将通过JavaScript动态加载 -->
+        </div>
+    </div>
+    
+    <script th:src="@{/js/undeliverable-report/preview.js}"></script>
+</body>
+</html> 

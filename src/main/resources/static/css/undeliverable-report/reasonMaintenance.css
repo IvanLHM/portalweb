@@ -1,0 +1,45 @@
+/* 原因维护页面样式 */
+.reason-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.reason-list {
+    margin-top: 30px;
+}
+
+/* 表格样式覆盖 */
+.table td {
+    vertical-align: middle;
+}
+
+/* 描述文本区域样式 */
+textarea.form-control {
+    min-height: 100px;
+}
+
+/* 状态切换按钮样式 */
+.custom-switch {
+    padding-left: 2.25rem;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+    border-color: #28a745;
+    background-color: #28a745;
+}
+
+/* 必填字段标记 */
+.required:after {
+    content: " *";
+    color: #dc3545;
+}
+
+/* 空状态样式 */
+#emptyState {
+    padding: 3rem;
+}
+
+/* 按钮组样式 */
+.btn-group .btn {
+    margin: 0 2px;
+} 

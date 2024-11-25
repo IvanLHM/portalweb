@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/layout :: html(
+        ~{::title},
+        ~{::div#content},
+        ~{::link},
+        ~{::script}
+      )">
+<head>
+    <title>报告详情</title>
+    <link th:href="@{/css/undeliverable-report/detail.css}" rel="stylesheet">
+</head>
+<body>
+    <div id="content">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">报告详情</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group mr-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="exportPdf">导出PDF</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="exportExcel">导出Excel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-info mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>报告ID：</strong>
+                    <span id="reportId"></span>
+                </div>
+                <div class="col-md-4">
+                    <strong>创建时间：</strong>
+                    <span id="createTime"></span>
+                </div>
+                <div class="col-md-4">
+                    <strong>状态：</strong>
+                    <span id="status"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-content">
+            <!-- 报告具体内容 -->
+        </div>
+    </div>
+    
+    <script th:src="@{/js/undeliverable-report/detail.js}"></script>
+</body>
+</html> 

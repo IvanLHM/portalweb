@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UndeliverableReasonMapper">
+    
+    <resultMap id="reasonResultMap" type="com.example.demo.entity.UndeliverableReason">
+        <id property="id" column="id_str"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="reasonResultMap">
+        SELECT 
+            id,
+            CAST(id AS VARCHAR) as id_str,
+            description,
+            created_at
+        FROM undeliverable_reasons 
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findById" resultMap="reasonResultMap">
+        SELECT 
+            id,
+            CAST(id AS VARCHAR) as id_str,
+            description,
+            created_at
+        FROM undeliverable_reasons 
+        WHERE id = #{id}
+    </select>
+
+    <select id="countByDescription" resultType="int">
+        SELECT COUNT(*) 
+        FROM undeliverable_reasons 
+        WHERE description = #{description}
+        AND id != COALESCE(#{id}, 0)
+    </select>
+
+    <insert id="insert">
+        INSERT INTO undeliverable_reasons (
+            id,
+            description
+        ) VALUES (
+            #{id},
+            #{description}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE undeliverable_reasons 
+        SET description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM undeliverable_reasons 
+        WHERE id = #{id}
+    </delete>
+</mapper> 

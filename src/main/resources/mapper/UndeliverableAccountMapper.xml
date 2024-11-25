@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UndeliverableAccountMapper">
+    
+    <resultMap id="accountResultMap" type="com.example.demo.entity.UndeliverableAccount">
+        <id property="id" column="id"/>
+        <result property="account" column="account"/>
+        <result property="reasonId" column="reason_id"/>
+        <result property="reasonCode" column="reasonCode"/>
+        <result property="description" column="description"/>
+        <result property="lastUpdate" column="last_update"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="accountResultMap">
+        SELECT 
+            a.*,
+            CAST(r.id AS VARCHAR) as reasonCode,
+            r.description
+        FROM undeliverable_accounts a
+        LEFT JOIN undeliverable_reasons r ON a.reason_id = r.id
+        ORDER BY a.last_update DESC
+    </select>
+
+    <select id="findById" resultMap="accountResultMap">
+        SELECT 
+            a.*,
+            CAST(r.id AS VARCHAR) as reasonCode,
+            r.description
+        FROM undeliverable_accounts a
+        LEFT JOIN undeliverable_reasons r ON a.reason_id = r.id
+        WHERE a.id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO undeliverable_accounts (
+            id,
+            account,
+            reason_id
+        ) VALUES (
+            #{id},
+            #{account},
+            #{reasonId}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE undeliverable_accounts 
+        SET 
+            account = #{account},
+            reason_id = #{reasonId},
+            last_update = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM undeliverable_accounts 
+        WHERE id = #{id}
+    </delete>
+</mapper> 

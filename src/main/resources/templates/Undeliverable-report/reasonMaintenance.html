@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/admin-layout :: html(
+        ~{::title},
+        ~{::#main-content},
+        ~{::link},
+        ~{::script},
+        'Undeliverable Reason Maintenance'
+      )">
+<head>
+    <title>Undeliverable Reason Maintenance</title>
+    <link rel="stylesheet" th:href="@{/css/undeliverable-report/reasonMaintenance.css}">
+</head>
+<body>
+    <div id="main-content">
+        <div class="row">
+            <div class="col-12">
+                <!-- 原因列表卡片 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Reason List</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-primary btn-sm" id="addReasonBtn">
+                                <i class="fas fa-plus"></i> Add Reason
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <!-- 空数据提示 -->
+                        <div id="emptyState" class="text-center p-5" style="display: none;">
+                            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Reasons Found</h5>
+                            <p class="text-muted mb-3">Click the "Add Reason" button to create a new reason.</p>
+                        </div>
+                        
+                        <!-- 数据表格 -->
+                        <table class="table table-hover text-nowrap" id="reasonTable">
+                            <thead>
+                                <tr>
+                                    <th>Reason Code</th>
+                                    <th>Description</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reasonTableBody">
+                                <!-- 数据行将由JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 添加/编辑原因的模态框 -->
+                <div class="modal fade" id="reasonModal" tabindex="-1" role="dialog" aria-labelledby="reasonModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="reasonModalLabel">Add Reason</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="reasonForm">
+                                    <input type="hidden" id="reasonId">
+                                    <div class="form-group reason-code-group" style="display: none;">
+                                        <label for="reasonCode">Reason Code</label>
+                                        <input type="text" class="form-control" id="reasonCode" name="reasonCode" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="description" class="required">Description</label>
+                                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="saveReasonBtn">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作日志模态框 -->
+                <div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="logModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="logModalLabel">Operation Logs</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="timeline" id="logTimeline">
+                                    <!-- 日志内容将由JavaScript动态生成 -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面特定的JS -->
+    <script th:src="@{/js/undeliverable-report/base.js}"></script>
+    <script th:src="@{/js/undeliverable-report/reasonMaintenance.js}"></script>
+</body>
+</html> 

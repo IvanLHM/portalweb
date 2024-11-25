@@ -1,0 +1,62 @@
+/* 表格样式 */
+.table-responsive {
+    margin-top: 20px;
+}
+
+.table th {
+    background-color: #f4f6f9;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* 查询条件区域样式 */
+.search-area {
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+}
+
+/* 按钮样式 */
+.btn-group {
+    margin-bottom: 10px;
+}
+
+/* 日期选择器样式 */
+.date-picker {
+    width: 200px;
+}
+
+/* 消息提示区域 */
+#messageContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+/* 加载中状态样式 */
+.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.loading:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.7);
+    z-index: 1000;
+}
+
+/* 表格操作按钮样式 */
+.table .btn {
+    margin: 0 3px;
+} 

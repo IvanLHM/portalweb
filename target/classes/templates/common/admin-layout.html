@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="html(title, main, link, script, pageTitle)">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:replace="${title}">AdminLTE 3</title>
+
+    <!-- 引入公共CSS -->
+    <th:block th:replace="common/admin-css :: admin-css" />
+    <!-- 页面特定的CSS -->
+    <th:block th:replace="${link}" />
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- 导航栏 -->
+        <th:block th:replace="common/admin-header :: header(${pageTitle})" />
+
+        <!-- 侧边栏 -->
+        <th:block th:replace="common/admin-sidebar :: sidebar" />
+
+        <!-- 主要内容 -->
+        <div class="content-wrapper">
+            <!-- 内容头部 -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0" th:text="${pageTitle}">Page Title</h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="content">
+                <div class="container-fluid">
+                    <th:block th:replace="${main}" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="main-footer">
+            <div class="float-right d-none d-sm-inline">
+                Version 1.0.0
+            </div>
+            <strong>Copyright &copy; 2024 <a href="#">Your Company</a>.</strong> All rights reserved.
+        </footer>
+    </div>
+
+    <!-- 引入公共JS -->
+    <th:block th:replace="common/admin-js :: admin-js" />
+    <!-- 页面特定的JS -->
+    <th:block th:replace="${script}" />
+</body>
+</html> 
