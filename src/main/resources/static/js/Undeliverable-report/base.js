@@ -47,13 +47,13 @@ class BasePage {
   }
 
   showMessage(message, type = 'success') {
-      // 如果有 toastr 就用 toastr，否则用 alert
       if (typeof toastr !== 'undefined') {
-          toastr[type](message);
-      } else {
+          // 将 danger 类型映射为 error
           if (type === 'danger') {
               type = 'error';
           }
+          toastr[type](message);
+      } else {
           alert(`${type.toUpperCase()}: ${message}`);
       }
   }

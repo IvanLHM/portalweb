@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.service.UndeliveryService;
+import com.example.demo.service.undeliverableService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -11,13 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/undelivery-import")
 public class UndeliveryController {
     
     @Autowired
-    private UndeliveryService undeliveryService;
+    private undeliverableService undeliveryService;
     
     @GetMapping
     public String importPage(Model model) {
@@ -30,8 +31,8 @@ public class UndeliveryController {
     public ResponseEntity<?> generateMobileNoData(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
         try {
-            undeliveryService.generateMobileNoData(date);
-            return ResponseEntity.ok().build();
+            Map<String, Object> result = undeliveryService.generateMobileNoData(date);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -50,8 +51,8 @@ public class UndeliveryController {
         }
         
         try {
-            undeliveryService.importAccountData(file);
-            return ResponseEntity.ok().build();
+            Map<String, Object> result = undeliveryService.importAccountData(file);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

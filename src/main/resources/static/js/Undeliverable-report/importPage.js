@@ -45,18 +45,41 @@ class ImportPage extends BasePage {
 
     generateData(date) {
         const $btn = $('#generateBtn');
+        const $result = $('#generateResult');
+        
         $btn.prop('disabled', true)
             .html('<i class="fas fa-spinner fa-spin mr-1"></i> Generating...');
+        
+        $result.hide();
 
         $.ajax({
             url: '/undelivery-import/generate-mobile-no',
             type: 'POST',
             data: { date: date },
-            success: () => {
+            success: (response) => {
                 this.showMessage('Data generated successfully');
+                
+                // 更新统计表格
+                $('#generateDate').text(date);
+                $('#generateTotalRecords').text(response.totalRecords);
+                $('#generateStatus').html('<span class="badge badge-success">Success</span>');
+                $('#generateTime').text(new Date().toLocaleString());
+                
+                $result.show();
             },
             error: (xhr) => {
                 this.showMessage('Failed to generate data: ' + xhr.responseText, 'danger');
+                
+                // 更新统计表格（错误状态）
+                $('#generateDate').text(date);
+                $('#generateTotalRecords').text('0');
+                $('#generateStatus').html(`
+                    <span class="badge badge-danger">Failed</span>
+                    <small class="text-danger ml-2">${xhr.responseText}</small>
+                `);
+                $('#generateTime').text(new Date().toLocaleString());
+                
+                $result.show();
             },
             complete: () => {
                 $btn.prop('disabled', false)
@@ -79,8 +102,12 @@ class ImportPage extends BasePage {
         }
 
         const $btn = $('#uploadBtn');
+        const $result = $('#uploadResult');
+        
         $btn.prop('disabled', true)
             .html('<i class="fas fa-spinner fa-spin mr-1"></i> Uploading...');
+        
+        $result.hide();
 
         const formData = new FormData();
         formData.append('file', file);
@@ -91,13 +118,32 @@ class ImportPage extends BasePage {
             data: formData,
             processData: false,
             contentType: false,
-            success: () => {
+            success: (response) => {
                 this.showMessage('File uploaded successfully');
                 $('#uploadForm')[0].reset();
                 $('.input-group input').val('Choose file');
+                
+                // 更新统计表格
+                $('#resultFileName').text(file.name);
+                $('#resultTotalLines').text(response.totalLines);
+                $('#resultStatus').html('<span class="badge badge-success">Success</span>');
+                $('#resultTime').text(new Date().toLocaleString());
+                
+                $result.show();
             },
             error: (xhr) => {
-                this.showMessage('Failed to upload file: ' + xhr.responseText, 'danger');
+                this.showMessage('Failed to upload file: ' + xhr.responseText, 'error');
+                
+                // 更新统计表格（错误状态）
+                $('#resultFileName').text(file.name);
+                $('#resultTotalLines').text('0');
+                $('#resultStatus').html(`
+                    <span class="badge badge-danger">Failed</span>
+                    <small class="text-danger ml-2">${xhr.responseText}</small>
+                `);
+                $('#resultTime').text(new Date().toLocaleString());
+                
+                $result.show();
             },
             complete: () => {
                 $btn.prop('disabled', false)

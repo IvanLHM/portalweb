@@ -53,7 +53,7 @@ class ReasonMaintenancePage extends BasePage {
             success: reasons => this.handleDataLoaded(reasons),
             error: xhr => {
                 console.error('Failed to load reasons:', xhr);
-                this.showMessage('Failed to load reasons', 'danger');
+                this.showMessage('Failed to load reasons', 'error');
             }
         });
     }

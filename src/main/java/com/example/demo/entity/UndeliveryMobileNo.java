@@ -11,6 +11,6 @@ public class UndeliveryMobileNo {
     private String acNo;
     private String reason;
     private String mobileNumber;
-    private LocalDateTime createdAt;
+    private LocalDateTime sendTime;
     private LocalDateTime lastUpdate;
 } 
