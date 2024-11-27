@@ -2,76 +2,190 @@
  * 原因维护页面类
  */
 class ReasonMaintenancePage extends BasePage {
+    // 定义静态选择器配置
+    static selectors = {
+        table: '#reasonTable',
+        tableBody: '#reasonTableBody',
+        modal: {
+            container: '#reasonModal'
+        },
+        form: {
+            container: '#reasonForm',
+            inputs: {
+                id: '#reasonId',
+                description: '#description'
+            }
+        },
+        buttons: {
+            add: '#addReasonBtn',
+            save: '#saveReasonBtn'
+        },
+        states: {
+            empty: '#emptyState'
+        },
+        logs: {
+            modal: '#logModal',
+            label: '#logModalLabel',
+            timeline: '#logTimeline'
+        }
+    };
+
     constructor() {
         super();
-        this.$reasonTable = $('#reasonTable');
+        this.container = document.querySelector('.content-wrapper');
+        this.initElements();
         this.initFormValidation();
         this.loadData();
-    }
-
-    initializeEvents() {
-        const $document = $(document);
+        this.bindEvents();
         
-        // 添加和保存按钮事件
-        $document
-            .on('click', '#addReasonBtn', () => this.showModal())
-            .on('click', '#saveReasonBtn', () => this.saveReason());
+        // 添加防抖的保存方法
+        this.debouncedSave = this.debounce(this.saveReason.bind(this), 300);
+    }
 
-        // 表格操作按钮事件
-        $document
-            .on('click', '.edit-btn', e => {
-                const $btn = $(e.currentTarget);
-                this.editReason(
-                    $btn.attr('data-id'),
-                    $btn.attr('data-description')
-                );
-            })
-            .on('click', '.delete-btn', e => {
-                e.preventDefault();
-                const id = $(e.currentTarget).attr('data-id');
-                if (id) {
-                    this.deleteReason(String(id));
+    initElements() {
+        this.elements = {};
+        const initElementsRecursive = (config, target) => {
+            Object.entries(config).forEach(([key, value]) => {
+                if (typeof value === 'string') {
+                    target[key] = this.container.querySelector(value);
+                } else if (typeof value === 'object') {
+                    target[key] = {};
+                    initElementsRecursive(value, target[key]);
                 }
-            })
-            .on('click', '.logs-btn', e => {
-                const $btn = $(e.currentTarget);
-                this.showOperationLogs(
-                    $btn.attr('data-id'),
-                    $btn.attr('data-reason-code')
-                );
             });
-
-        // 模态框事件
-        $document.on('hidden.bs.modal', '#reasonModal', () => this.resetForm());
+        };
+        initElementsRecursive(ReasonMaintenancePage.selectors, this.elements);
     }
 
-    // 加载数据列表
-    loadData() {
-        $.ajax({
-            url: '/undeliverable-report/api/reasons',
-            type: 'GET',
-            success: reasons => this.handleDataLoaded(reasons),
-            error: xhr => {
-                console.error('Failed to load reasons:', xhr);
-                this.showMessage('Failed to load reasons', 'error');
+    // 根据属性名获取选择器
+    getSelector(prop) {
+        // 递归查找选择器
+        const findSelector = (obj, key) => {
+            if (typeof obj === 'string') return obj;
+            if (typeof obj !== 'object' || !obj) return null;
+            
+            for (const [k, v] of Object.entries(obj)) {
+                if (k === key) return v;
+                const found = findSelector(v, key);
+                if (found) return found;
             }
-        });
+            return null;
+        };
+
+        return findSelector(ReasonMaintenancePage.selectors, prop);
     }
 
-    // 处理数据加载完成
+    bindEvents() {
+        this.bindStaticEvents();
+        this.bindDynamicEvents();
+    }
+
+    // 静态元素事件绑定
+    bindStaticEvents() {
+        const { buttons, modal } = this.elements;
+        
+        // 固定按钮事件
+        buttons.add?.addEventListener('click', () => this.showModal());
+        buttons.save?.addEventListener('click', () => this.debouncedSave());
+        
+        // Modal 事件
+        modal.container?.addEventListener('hidden.bs.modal', () => this.resetForm());
+    }
+
+    // 动态元素事件绑定（使用事件委托）
+    bindDynamicEvents() {
+        // 表格操作按钮的事件委托
+        const tableBody = this.elements.tableBody;
+        if (tableBody) {
+            tableBody.addEventListener('click', e => this.handleTableAction(e));
+        }
+    }
+
+    // 表格操作按钮的事件处理
+    handleTableAction(e) {
+        try {
+            // 修改目标元素的查找方式
+            const target = e.target.closest('button');  // 直接查找最近的按钮
+            if (!target) return;
+
+            // 获取按钮所在行的数据
+            const tr = target.closest('tr');
+            if (!tr) return;
+
+            const id = tr.dataset.id;
+            if (!id) return;
+
+            // 根据按钮的类来判断操作类型
+            if (target.classList.contains('edit-btn')) {
+                const description = target.dataset.description;
+                this.editReason(id, description);
+            } else if (target.classList.contains('delete-btn')) {
+                e.preventDefault();
+                this.deleteReason(id);
+            } else if (target.classList.contains('logs-btn')) {
+                this.showOperationLogs(id, id);  // 使用 id 作为 reasonCode
+            }
+        } catch (error) {
+            console.error('Error handling table action:', error);
+            this.showMessage('An error occurred while processing your request', 'error');
+        }
+    }
+
+    createActionButtons(reason) {
+        const id = String(reason.id);
+        return `
+            <button class="btn btn-sm btn-info edit-btn" 
+                    data-description="${this.escapeHtml(reason.description)}"
+                    title="Edit">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger delete-btn" 
+                    title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn btn-sm btn-primary logs-btn" 
+                    title="Operation Logs">
+                <i class="fas fa-list-alt"></i>
+            </button>
+        `;
+    }
+
+    async loadData() {
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-overlay';
+        loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.container.appendChild(loadingIndicator);
+
+        try {
+            const response = await fetch('/undeliverable-report/api/reasons');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const reasons = await response.json();
+            this.handleDataLoaded(reasons);
+        } catch (error) {
+            console.error('Failed to load reasons:', error);
+            this.showMessage('Failed to load reasons', 'error');
+        } finally {
+            loadingIndicator.remove();
+        }
+    }
+
     handleDataLoaded(reasons) {
-        if (!reasons || reasons.length === 0) {
+        if (!reasons?.length) {
             this.toggleView(false);
             return;
         }
 
-        const $tbody = $('#reasonTableBody');
-        $tbody.empty();
-        $tbody.html(reasons.map(reason => this.createReasonRow(reason)).join(''));
-        this.toggleView(true);
+        // 使用 jQuery 选择器确保安全访问
+        const $tableBody = $(this.elements.tableBody);
+        if ($tableBody.length) {
+            $tableBody.html(reasons.map(this.createReasonRow.bind(this)).join(''));
+            this.toggleView(true);
+        } else {
+            console.error('Table body element not found');
+            this.showMessage('Failed to update table content', 'error');
+        }
     }
 
-    // 创建行HTML
     createReasonRow(reason) {
         const id = String(reason.id);
         return `
@@ -88,231 +202,191 @@ class ReasonMaintenancePage extends BasePage {
         `;
     }
 
-    // 显示模态框
     showModal(id = null) {
         this.resetForm();
-        $('#reasonId').val(id);
-        $('#reasonModalLabel').text(id ? 'Edit Reason' : 'Add Reason');
-        $('#reasonModal').modal('show');
+        this.elements.form.inputs.id.value = id;
+        this.elements.modal.label.textContent = id ? 'Edit Reason' : 'Add Reason';
+        $(this.elements.modal.container).modal('show');
     }
 
-    // 编辑原因
     editReason(id, description) {
         this.showModal(id);
-        $('#reasonId').val(id);
-        $('#description').val(description);
+        this.elements.form.inputs.id.value = id;
+        this.elements.form.inputs.description.value = description;
     }
 
-    // 保存原因
-    saveReason() {
+    async saveReason() {
         if (!this.validateForm()) return;
 
-        const id = $('#reasonId').val();
+        const id = this.elements.form.inputs.id.value;
         const data = this.getFormData();
-
-        const url = id ? 
-            `/undeliverable-report/api/reasons/${id}` : 
-            '/undeliverable-report/api/reasons';
-        const method = id ? 'PUT' : 'POST';
-
-        $.ajax({
-            url,
-            type: method,
-            contentType: 'application/json',
-            data: JSON.stringify(data),
-            success: () => {
-                $('#reasonModal').modal('hide');
-                this.showMessage(`Reason ${id ? 'updated' : 'created'} successfully`);
-                this.loadData();
-            },
-            error: xhr => {
-                console.error('Error:', xhr);
-                let errorMessage = '';
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMessage = response.message || response.error || xhr.responseText;
-                } catch (e) {
-                    errorMessage = xhr.responseText;
+        
+        try {
+            const response = await fetch(
+                id ? `/undeliverable-report/api/reasons/${id}` : '/undeliverable-report/api/reasons', 
+                {
+                    method: id ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 }
-                this.showMessage(`Failed to ${id ? 'update' : 'create'} reason: ${errorMessage}`, 'danger');
-            }
-        });
-    }
+            );
 
-    // 删除原因
-    deleteReason(id) {
-        if (!id) return;
-        
-        if (!confirm('Are you sure you want to delete this reason?')) return;
+            if (!response.ok) throw await response.text();
 
-        const url = `/undeliverable-report/api/reasons/${String(id)}`;
-        
-        $.ajax({
-            url,
-            type: 'DELETE',
-            success: response => {
-                this.showMessage('Reason deleted successfully');
-                setTimeout(() => this.loadData(), 100);
-            },
-            error: xhr => {
-                console.error('Delete failed:', xhr);
-                this.showMessage('Failed to delete reason: ' + (xhr.responseText || 'Unknown error'), 'danger');
-            }
-        });
-    }
-
-    // 显示操作日志
-    showOperationLogs(id, reasonCode) {
-        if (!id) return;
-        
-        $.ajax({
-            url: `/undeliverable-report/api/reasons/${id}/logs`,
-            type: 'GET',
-            success: logs => {
-                console.log('Loaded logs:', logs);  // 调试日志
-                $('#logModalLabel').text(`Operation Logs - Reason: ${reasonCode}`);
-                this.renderTimeline(logs);
-                $('#logModal').modal('show');
-            },
-            error: xhr => {
-                console.error('Error loading logs:', xhr);
-                this.showMessage('Failed to load operation logs', 'danger');
-            }
-        });
-    }
-
-    // 重置表单
-    resetForm() {
-        const $form = $('#reasonForm');
-        $form[0].reset();
-        $('#reasonId').val('');
-        $form.validate().resetForm();
-        $('.is-invalid').removeClass('is-invalid');
-        $('.invalid-feedback').hide();
-    }
-
-    // 切换视图
-    toggleView(hasReasons) {
-        $('#reasonTable').toggle(hasReasons);
-        $('#emptyState').toggle(!hasReasons);
-    }
-
-    // 创建操作按钮
-    createActionButtons(reason) {
-        const id = String(reason.id);
-        return `
-            <button class="btn btn-sm btn-info edit-btn" 
-                    data-id="${id}" 
-                    data-description="${this.escapeHtml(reason.description)}"
-                    title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger delete-btn" 
-                    data-id="${id}" 
-                    title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-sm btn-primary logs-btn" 
-                    data-id="${id}"
-                    data-reason-code="${id}"
-                    title="Operation Logs">
-                <i class="fas fa-list-alt"></i>
-            </button>
-        `;
-    }
-
-    // 渲染时间轴
-    renderTimeline(logs) {
-        const $timeline = $('#logTimeline');
-        $timeline.empty();
-
-        if (!logs || logs.length === 0) {
-            $timeline.append(`
-                <div class="time-label">
-                    <span class="bg-secondary">No Logs</span>
-                </div>
-                <div>
-                    <i class="fas fa-info bg-info"></i>
-                    <div class="timeline-item">
-                        <h3 class="timeline-header">No operation logs found</h3>
-                    </div>
-                </div>
-            `);
-            return;
+            $(this.elements.modal.container).modal('hide');
+            this.showMessage(`Reason ${id ? 'updated' : 'created'} successfully`);
+            await this.loadData();
+        } catch (error) {
+            console.error('Error:', error);
+            this.showMessage(`Failed to ${id ? 'update' : 'create'} reason: ${error}`, 'error');
         }
+    }
 
-        const groupedLogs = this.groupLogsByDate(logs);
-        Object.keys(groupedLogs).sort().reverse().forEach(date => {
-            $timeline.append(`
-                <div class="time-label">
-                    <span class="bg-primary">${date}</span>
-                </div>
-            `);
+    async deleteReason(id) {
+        if (!id || !confirm('Are you sure you want to delete this reason?')) return;
 
-            groupedLogs[date].forEach(log => {
-                const time = new Date(log.createdAt).toLocaleTimeString();
-                $timeline.append(`
+        try {
+            await $.ajax({
+                url: `/undeliverable-report/api/reasons/${id}`,
+                type: 'DELETE'
+            });
+            
+            this.showMessage('Reason deleted successfully');
+            await this.loadData();
+        } catch (error) {
+            console.error('Delete failed:', error);
+            this.showMessage('Failed to delete reason: ' + (error.responseText || 'Unknown error'), 'error');
+        }
+    }
+
+    async showOperationLogs(id, reasonCode) {
+        if (!id) return;
+        
+        try {
+            const response = await fetch(`/undeliverable-report/api/reasons/${id}/logs`);
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            
+            const logs = await response.json();
+            
+            // 使用 jQuery 确保模态框和内容更新正确
+            const $logModal = $(this.elements.logs.modal);
+            const $logLabel = $(this.elements.logs.label);
+            const $logTimeline = $(this.elements.logs.timeline);
+
+            $logLabel.text(`Operation Logs - Reason: ${reasonCode}`);
+            
+            // 渲染日志内容
+            if (!logs || logs.length === 0) {
+                $logTimeline.html(`
+                    <div class="time-label">
+                        <span class="bg-secondary">No Logs</span>
+                    </div>
                     <div>
-                        <i class="${this.getOperationIcon(log.operationType)} ${this.getOperationBgClass(log.operationType)}"></i>
+                        <i class="fas fa-info bg-info"></i>
                         <div class="timeline-item">
-                            <span class="time">
-                                <i class="fas fa-clock"></i> ${time}
-                            </span>
-                            <h3 class="timeline-header">
-                                <span class="badge badge-${this.getOperationTypeClass(log.operationType)}">
-                                    ${log.operationType}
-                                </span>
-                                ${this.escapeHtml(log.operationDesc)}
-                            </h3>
+                            <h3 class="timeline-header">No operation logs found</h3>
                         </div>
                     </div>
                 `);
-            });
-        });
+            } else {
+                const groupedLogs = this.groupLogsByDate(logs);
+                let timelineHtml = '';
+                
+                Object.keys(groupedLogs).sort().reverse().forEach(date => {
+                    timelineHtml += `
+                        <div class="time-label">
+                            <span class="bg-primary">${date}</span>
+                        </div>
+                    `;
 
-        $timeline.append(`
-            <div>
-                <i class="fas fa-clock bg-gray"></i>
-            </div>
-        `);
-    }
+                    groupedLogs[date].forEach(log => {
+                        const time = new Date(log.createdAt).toLocaleTimeString();
+                        timelineHtml += `
+                            <div>
+                                <i class="${this.getOperationIcon(log.operationType)} ${this.getOperationBgClass(log.operationType)}"></i>
+                                <div class="timeline-item">
+                                    <span class="time">
+                                        <i class="fas fa-clock"></i> ${time}
+                                    </span>
+                                    <h3 class="timeline-header">
+                                        <span class="badge badge-${this.getOperationTypeClass(log.operationType)}">
+                                            ${log.operationType}
+                                        </span>
+                                        ${this.escapeHtml(log.operationDesc)}
+                                    </h3>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
 
-    // 按日期分组日志
-    groupLogsByDate(logs) {
-        return logs.reduce((groups, log) => {
-            const date = new Date(log.createdAt).toLocaleDateString();
-            if (!groups[date]) {
-                groups[date] = [];
+                timelineHtml += `
+                    <div>
+                        <i class="fas fa-clock bg-gray"></i>
+                    </div>
+                `;
+
+                $logTimeline.html(timelineHtml);
             }
-            groups[date].push(log);
-            return groups;
-        }, {});
+
+            // 显示模态框
+            $logModal.modal('show');
+
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            this.showMessage('Failed to load operation logs: ' + error.message, 'error');
+        }
     }
 
-    // 获取操作类型样式
-    getOperationTypeClass(type) {
-        const classes = {
-            'CREATE': 'success',
-            'UPDATE': 'info',
-            'DELETE': 'danger'
-        };
-        return classes[type] || 'secondary';
+    parseErrorMessage(error) {
+        try {
+            const response = JSON.parse(error.responseText);
+            return response.message || response.error || error.responseText;
+        } catch (e) {
+            return error.responseText;
+        }
     }
 
-    // 添加缺失的表单验证相关方法
+    resetForm() {
+        const form = this.elements.form.container;
+        form.reset();
+        this.elements.form.inputs.id.value = '';
+        $(form).validate().resetForm();
+        $(form).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+        $(form).find('.invalid-feedback').hide();
+    }
+
+    toggleView(hasReasons) {
+        // 使用 jQuery 选择器确保安全访问
+        const $table = $(this.elements.table);
+        const $emptyState = $(this.elements.states.empty);
+
+        if ($table.length) {
+            $table.toggle(hasReasons);
+        }
+        
+        if ($emptyState.length) {
+            $emptyState.toggle(!hasReasons);
+        }
+    }
+
     validateForm() {
-        return $('#reasonForm').valid();
+        return $(this.elements.form.container).valid();
     }
 
     getFormData() {
         return {
-            id: $('#reasonId').val() ? String($('#reasonId').val()) : null,  // 转为字符串
-            description: $('#description').val()
+            id: this.elements.form.inputs.id.value || null,
+            description: this.elements.form.inputs.description.value
         };
     }
 
     initFormValidation() {
-        $('#reasonForm').validate({
+        $(this.elements.form.container).validate({
             rules: {
                 description: {
                     required: true,
@@ -327,17 +401,87 @@ class ReasonMaintenancePage extends BasePage {
             },
             errorElement: 'div',
             errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid');
+            highlight: element => $(element).addClass('is-invalid'),
+            unhighlight: element => $(element).removeClass('is-invalid'),
+            success: element => {
+                $(element).remove();
             },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid');
+            submitHandler: (form, event) => {
+                event.preventDefault();
+                this.saveReason();
+            }
+        });
+
+        $(this.elements.form.inputs.description).on('input', e => {
+            const input = e.target;
+            if (input.value) {
+                if (input.validity.valid) {
+                    input.classList.remove('is-invalid');
+                    input.classList.remove('is-valid');
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                }
+            } else {
+                input.classList.remove('is-valid', 'is-invalid');
             }
         });
     }
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // 添加 groupLogsByDate 方法
+    groupLogsByDate(logs) {
+        return logs.reduce((groups, log) => {
+            const date = new Date(log.createdAt).toLocaleDateString();
+            if (!groups[date]) {
+                groups[date] = [];
+            }
+            groups[date].push(log);
+            return groups;
+        }, {});
+    }
+
+    // 添加辅助方法
+    getOperationIcon(type) {
+        const icons = {
+            'CREATE': 'fas fa-plus',
+            'UPDATE': 'fas fa-edit',
+            'DELETE': 'fas fa-trash'
+        };
+        return icons[type] || 'fas fa-info';
+    }
+
+    getOperationBgClass(type) {
+        const classes = {
+            'CREATE': 'bg-success',
+            'UPDATE': 'bg-info',
+            'DELETE': 'bg-danger'
+        };
+        return classes[type] || 'bg-secondary';
+    }
+
+    getOperationTypeClass(type) {
+        const classes = {
+            'CREATE': 'success',
+            'UPDATE': 'info',
+            'DELETE': 'danger'
+        };
+        return classes[type] || 'secondary';
+    }
 }
 
-// 初始化页面
-$(document).ready(() => {
+// 使用 DOMContentLoaded 事件
+document.addEventListener('DOMContentLoaded', () => {
     window.reasonPage = new ReasonMaintenancePage();
 }); 
