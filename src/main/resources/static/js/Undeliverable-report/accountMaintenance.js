@@ -2,10 +2,43 @@
  * 账户维护页面类
  */
 class AccountMaintenancePage extends BasePage {
-    // 定义静态选择器配置
-    static selectors = {
-        table: '#accountTable',
-        tableBody: '#accountTableBody',
+    // 私有配置
+    static #config = {
+        modal: {
+            addTitle: 'Add Account',
+            editTitle: 'Edit Account',
+            deleteConfirm: 'Are you sure you want to delete this account?'
+        },
+        validation: {
+            rules: {
+                account: {
+                    required: true,
+                    minlength: 3,
+                    maxlength: 100
+                },
+                reason: {
+                    required: true
+                }
+            },
+            messages: {
+                account: {
+                    required: "Please enter account",
+                    minlength: "Account must be at least 3 characters",
+                    maxlength: "Account cannot exceed 100 characters"
+                },
+                reason: {
+                    required: "Please select a reason"
+                }
+            }
+        }
+    };
+
+    // 私有选择器
+    static #selectors = {
+        table: {
+            container: '#accountTable',
+            body: '#accountTableBody'
+        },
         modal: {
             container: '#accountModal',
             label: '#accountModalLabel'
@@ -35,66 +68,81 @@ class AccountMaintenancePage extends BasePage {
     constructor() {
         super();
         this.container = document.querySelector('.content-wrapper');
-        this.initElements();
+        this.elements = this.initElements();
         this.initFormValidation();
         this.loadData();
         this.loadReasonsList();
-        this.bindEvents();
-        
-        // 添加防抖的保存方法
         this.debouncedSave = this.debounce(this.saveAccount.bind(this), 300);
+        this.bindEvents();
     }
 
+    // 使用代理模式初始化元素
     initElements() {
-        this.elements = {};
-        const initElementsRecursive = (config, target) => {
-            Object.entries(config).forEach(([key, value]) => {
-                if (typeof value === 'string') {
-                    target[key] = this.container.querySelector(value);
-                } else if (typeof value === 'object') {
-                    target[key] = {};
-                    initElementsRecursive(value, target[key]);
+        const cache = new Map();
+
+        const createProxy = (path = '') => {
+            return new Proxy({}, {
+                get: (target, prop) => {
+                    const fullPath = path ? `${path}.${prop}` : prop;
+                    
+                    if (cache.has(fullPath)) {
+                        return cache.get(fullPath);
+                    }
+
+                    const selector = this.getSelector(fullPath);
+                    if (!selector) return undefined;
+
+                    if (typeof selector === 'object') {
+                        const nestedProxy = createProxy(fullPath);
+                        cache.set(fullPath, nestedProxy);
+                        return nestedProxy;
+                    }
+
+                    const element = this.container.querySelector(selector);
+                    cache.set(fullPath, element);
+                    return element;
                 }
             });
         };
-        initElementsRecursive(AccountMaintenancePage.selectors, this.elements);
+
+        return createProxy();
+    }
+
+    getSelector(path) {
+        const parts = path.split('.');
+        let current = AccountMaintenancePage.#selectors;
+
+        for (const part of parts) {
+            if (!current || typeof current !== 'object') {
+                return null;
+            }
+            current = current[part];
+        }
+
+        return current;
     }
 
     bindEvents() {
-        this.bindStaticEvents();
-        this.bindDynamicEvents();
-    }
+        // 静态事件
+        this.elements.buttons?.add?.addEventListener('click', () => this.showModal());
+        this.elements.buttons?.save?.addEventListener('click', () => this.debouncedSave());
+        this.elements.modal?.container?.addEventListener('hidden.bs.modal', () => this.resetForm());
 
-    bindStaticEvents() {
-        const { buttons, modal } = this.elements;
-        
-        // 固定按钮事件
-        buttons.add?.addEventListener('click', () => this.showModal());
-        buttons.save?.addEventListener('click', () => this.debouncedSave());
-        
-        // Modal 事件
-        modal.container?.addEventListener('hidden.bs.modal', () => this.resetForm());
-    }
-
-    bindDynamicEvents() {
-        // 表格操作按钮的事件委托
-        const tableBody = this.elements.tableBody;
-        if (tableBody) {
-            tableBody.addEventListener('click', e => this.handleTableAction(e));
-        }
+        // 动态事件
+        this.elements.table?.body?.addEventListener('click', e => this.handleTableAction(e));
     }
 
     handleTableAction(e) {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        const tr = target.closest('tr');
+        if (!tr) return;
+
+        const id = tr.dataset.id;
+        if (!id) return;
+
         try {
-            const target = e.target.closest('button');
-            if (!target) return;
-
-            const tr = target.closest('tr');
-            if (!tr) return;
-
-            const id = tr.dataset.id;
-            if (!id) return;
-
             if (target.classList.contains('edit-btn')) {
                 const account = target.dataset.account;
                 const reasonId = target.dataset.reasonId;
@@ -112,25 +160,23 @@ class AccountMaintenancePage extends BasePage {
     }
 
     async loadData() {
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'loading-overlay';
-        loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        this.container.appendChild(loadingIndicator);
-
+        const overlay = this.showLoading('Loading accounts...');
         try {
             const response = await fetch('/undeliverable-report/api/accounts');
             if (!response.ok) throw new Error('Network response was not ok');
+            
             const accounts = await response.json();
             this.handleDataLoaded(accounts);
         } catch (error) {
             console.error('Failed to load accounts:', error);
             this.showMessage('Failed to load accounts', 'error');
         } finally {
-            loadingIndicator.remove();
+            this.hideLoading(overlay);
         }
     }
 
     async loadReasonsList() {
+        const overlay = this.showLoading('Loading reasons...');
         try {
             const response = await fetch('/undeliverable-report/api/reasons');
             if (!response.ok) throw new Error('Failed to load reasons');
@@ -147,29 +193,24 @@ class AccountMaintenancePage extends BasePage {
         } catch (error) {
             console.error('Failed to load reasons:', error);
             this.showMessage('Failed to load reasons list', 'error');
+        } finally {
+            this.hideLoading(overlay);
         }
     }
 
     handleDataLoaded(accounts) {
-        if (!accounts?.length) {
-            this.toggleView(false);
-            return;
-        }
+        const hasAccounts = accounts?.length > 0;
+        this.toggleView(hasAccounts);
 
-        const $tableBody = $(this.elements.tableBody);
-        if ($tableBody.length) {
-            $tableBody.html(accounts.map(this.createAccountRow.bind(this)).join(''));
-            this.toggleView(true);
-        } else {
-            console.error('Table body element not found');
-            this.showMessage('Failed to update table content', 'error');
+        if (hasAccounts) {
+            const html = accounts.map(this.createAccountRow.bind(this)).join('');
+            this.elements.table.body.innerHTML = html;
         }
     }
 
     createAccountRow(account) {
-        const id = String(account.id);
         return `
-            <tr data-id="${id}">
+            <tr data-id="${account.id}">
                 <td>${this.escapeHtml(account.account)}</td>
                 <td>${this.escapeHtml(account.description || '')}</td>
                 <td>${this.formatDate(account.lastUpdate)}</td>
@@ -183,7 +224,6 @@ class AccountMaintenancePage extends BasePage {
     }
 
     createActionButtons(account) {
-        const id = String(account.id);
         return `
             <button class="btn btn-sm btn-info edit-btn" 
                     data-account="${this.escapeHtml(account.account)}"
@@ -203,23 +243,44 @@ class AccountMaintenancePage extends BasePage {
         `;
     }
 
-    showModal(id = null) {
-        this.resetForm();
-        this.elements.form.inputs.id.value = id;
-        this.elements.modal.label.textContent = id ? 'Edit Account' : 'Add Account';
-        $(this.elements.modal.container).modal('show');
-    }
+    initFormValidation() {
+        $(this.elements.form.container).validate({
+            rules: AccountMaintenancePage.#config.validation.rules,
+            messages: AccountMaintenancePage.#config.validation.messages,
+            errorElement: 'div',
+            errorClass: 'invalid-feedback',
+            highlight: element => $(element).addClass('is-invalid'),
+            unhighlight: element => $(element).removeClass('is-invalid'),
+            submitHandler: (form, event) => {
+                event.preventDefault();
+                this.saveAccount();
+            }
+        });
 
-    editAccount(id, account, reasonId) {
-        this.showModal(id);
-        this.elements.form.inputs.id.value = id;
-        this.elements.form.inputs.account.value = account;
-        this.elements.form.inputs.reason.value = reasonId;
+        // 添加实时验证
+        const accountInput = this.elements.form.inputs.account;
+        if (accountInput) {
+            accountInput.addEventListener('input', e => {
+                const input = e.target;
+                if (input.value) {
+                    if (input.validity.valid) {
+                        input.classList.remove('is-invalid');
+                        input.classList.remove('is-valid');
+                    } else {
+                        input.classList.remove('is-valid');
+                        input.classList.add('is-invalid');
+                    }
+                } else {
+                    input.classList.remove('is-valid', 'is-invalid');
+                }
+            });
+        }
     }
 
     async saveAccount() {
         if (!this.validateForm()) return;
 
+        const overlay = this.showLoading('Saving account...');
         const id = this.elements.form.inputs.id.value;
         const data = this.getFormData();
         
@@ -243,12 +304,56 @@ class AccountMaintenancePage extends BasePage {
         } catch (error) {
             console.error('Error:', error);
             this.showMessage(`Failed to ${id ? 'update' : 'create'} account: ${error}`, 'error');
+        } finally {
+            this.hideLoading(overlay);
         }
     }
 
-    async deleteAccount(id) {
-        if (!id || !confirm('Are you sure you want to delete this account?')) return;
+    validateForm() {
+        return $(this.elements.form.container).valid();
+    }
 
+    getFormData() {
+        return {
+            id: this.elements.form.inputs.id.value || null,
+            account: this.elements.form.inputs.account.value,
+            reasonId: this.elements.form.inputs.reason.value
+        };
+    }
+
+    showModal(id = null) {
+        this.resetForm();
+        this.elements.form.inputs.id.value = id;
+        this.elements.modal.label.textContent = id ? 
+            AccountMaintenancePage.#config.modal.editTitle : 
+            AccountMaintenancePage.#config.modal.addTitle;
+        $(this.elements.modal.container).modal('show');
+    }
+
+    resetForm() {
+        const form = this.elements.form.container;
+        form.reset();
+        this.elements.form.inputs.id.value = '';
+        $(form).validate().resetForm();
+        $(form).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+        $(form).find('.invalid-feedback').hide();
+    }
+
+    toggleView(hasAccounts) {
+        $(this.elements.table.container).toggle(hasAccounts);
+        $(this.elements.states.empty).toggle(!hasAccounts);
+    }
+
+    editAccount(id, account, reasonId) {
+        this.showModal(id);
+        this.elements.form.inputs.account.value = account;
+        this.elements.form.inputs.reason.value = reasonId;
+    }
+
+    async deleteAccount(id) {
+        if (!id || !confirm(AccountMaintenancePage.#config.modal.deleteConfirm)) return;
+
+        const overlay = this.showLoading('Deleting account...');
         try {
             const response = await fetch(`/undeliverable-report/api/accounts/${id}`, {
                 method: 'DELETE'
@@ -261,12 +366,15 @@ class AccountMaintenancePage extends BasePage {
         } catch (error) {
             console.error('Delete failed:', error);
             this.showMessage('Failed to delete account: ' + error, 'error');
+        } finally {
+            this.hideLoading(overlay);
         }
     }
 
     async showOperationLogs(id, account) {
         if (!id) return;
         
+        const overlay = this.showLoading('Loading logs...');
         try {
             const response = await fetch(`/undeliverable-report/api/accounts/${id}/logs`);
             if (!response.ok) throw new Error(await response.text());
@@ -289,6 +397,8 @@ class AccountMaintenancePage extends BasePage {
         } catch (error) {
             console.error('Error loading logs:', error);
             this.showMessage('Failed to load operation logs: ' + error.message, 'error');
+        } finally {
+            this.hideLoading(overlay);
         }
     }
 
@@ -345,103 +455,6 @@ class AccountMaintenancePage extends BasePage {
         `;
 
         return html;
-    }
-
-    resetForm() {
-        const form = this.elements.form.container;
-        form.reset();
-        this.elements.form.inputs.id.value = '';
-        $(form).validate().resetForm();
-        $(form).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-        $(form).find('.invalid-feedback').hide();
-    }
-
-    toggleView(hasAccounts) {
-        const $table = $(this.elements.table);
-        const $emptyState = $(this.elements.states.empty);
-
-        if ($table.length) {
-            $table.toggle(hasAccounts);
-        }
-        
-        if ($emptyState.length) {
-            $emptyState.toggle(!hasAccounts);
-        }
-    }
-
-    validateForm() {
-        return $(this.elements.form.container).valid();
-    }
-
-    getFormData() {
-        return {
-            id: this.elements.form.inputs.id.value || null,
-            account: this.elements.form.inputs.account.value,
-            reasonId: this.elements.form.inputs.reason.value
-        };
-    }
-
-    initFormValidation() {
-        $(this.elements.form.container).validate({
-            rules: {
-                account: {
-                    required: true,
-                    minlength: 3,
-                    maxlength: 100
-                },
-                reason: {
-                    required: true
-                }
-            },
-            messages: {
-                account: {
-                    required: "Please enter account",
-                    minlength: "Account must be at least 3 characters",
-                    maxlength: "Account cannot exceed 100 characters"
-                },
-                reason: {
-                    required: "Please select a reason"
-                }
-            },
-            errorElement: 'div',
-            errorClass: 'invalid-feedback',
-            highlight: element => $(element).addClass('is-invalid'),
-            unhighlight: element => $(element).removeClass('is-invalid'),
-            success: element => {
-                $(element).remove();
-            }
-        });
-
-        // 添加实时验证
-        const accountInput = this.elements.form.inputs.account;
-        if (accountInput) {
-            accountInput.addEventListener('input', e => {
-                const input = e.target;
-                if (input.value) {
-                    if (input.validity.valid) {
-                        input.classList.remove('is-invalid');
-                        input.classList.remove('is-valid');
-                    } else {
-                        input.classList.remove('is-valid');
-                        input.classList.add('is-invalid');
-                    }
-                } else {
-                    input.classList.remove('is-valid', 'is-invalid');
-                }
-            });
-        }
-    }
-
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
     }
 
     groupLogsByDate(logs) {

@@ -2,8 +2,8 @@
  * 导入页面类
  */
 class ImportPage extends BasePage {
-    // 定义静态选择器配置
-    static selectors = {
+    // 私有选择器配置
+    static #selectors = {
         generate: {
             dateInput: '#dateInput',
             button: '#generateBtn',
@@ -18,14 +18,7 @@ class ImportPage extends BasePage {
         upload: {
             form: '#uploadForm',
             fileInput: '#fileInput',
-            fileLabel: '.custom-file-label',
-            browseBtn: '#browseBtn',
-            uploadBtn: '#uploadBtn',
             result: '#uploadResult',
-            progress: {
-                bar: '.progress-bar',
-                container: '.progress'
-            },
             stats: {
                 fileName: '#resultFileName',
                 totalLines: '#resultTotalLines',
@@ -38,143 +31,181 @@ class ImportPage extends BasePage {
     constructor() {
         super();
         this.container = document.querySelector('.content-wrapper');
-        this.initElements();
+        this.elements = this.initElements();
         this.initDatePicker();
         this.initFileUpload();
-        
         this.debouncedGenerate = this.debounce(this.generateData.bind(this), 300);
-        
         this.bindEvents();
     }
 
+    // 使用代理模式初始化元素
     initElements() {
-        this.elements = {};
-        const initElementsRecursive = (config, target) => {
-            Object.entries(config).forEach(([key, value]) => {
-                if (typeof value === 'string') {
-                    target[key] = this.container.querySelector(value);
-                } else if (typeof value === 'object') {
-                    target[key] = {};
-                    initElementsRecursive(value, target[key]);
+        const cache = new Map();
+
+        const createProxy = (path = '') => {
+            return new Proxy({}, {
+                get: (target, prop) => {
+                    const fullPath = path ? `${path}.${prop}` : prop;
+                    
+                    // 如果已经缓存了元素，直接返回
+                    if (cache.has(fullPath)) {
+                        return cache.get(fullPath);
+                    }
+
+                    // 获取选择器
+                    const selector = this.getSelector(fullPath);
+                    if (!selector) return undefined;
+
+                    // 如果是对象，返回新的代理
+                    if (typeof selector === 'object') {
+                        const nestedProxy = createProxy(fullPath);
+                        cache.set(fullPath, nestedProxy);
+                        return nestedProxy;
+                    }
+
+                    // 查找并缓存元素
+                    const element = this.container.querySelector(selector);
+                    cache.set(fullPath, element);
+                    return element;
                 }
             });
         };
-        initElementsRecursive(ImportPage.selectors, this.elements);
+
+        return createProxy();
+    }
+
+    // 获取选择器
+    getSelector(path) {
+        const parts = path.split('.');
+        let current = ImportPage.#selectors;
+
+        for (const part of parts) {
+            if (!current || typeof current !== 'object') {
+                return null;
+            }
+            current = current[part];
+        }
+
+        return current;
     }
 
     initDatePicker() {
-        // 获取昨天的日期
         const yesterday = moment().subtract(1, 'days');
-        // 获取30天前的日期
         const minDate = moment().subtract(30, 'days');
         
-        $(this.elements.generate.dateInput).daterangepicker({
-            singleDatePicker: true,
-            showDropdowns: true,
-            locale: { format: 'YYYY-MM-DD' },
-            startDate: yesterday,  // 默认选择昨天
-            minDate: minDate,      // 最小日期：30天前
-            maxDate: yesterday,    // 最大日期：昨天
+        laydate.render({
+            elem: this.elements.generate.dateInput,
+            type: 'date',
+            format: 'yyyy-MM-dd',
+            value: yesterday.format('YYYY-MM-DD'),
+            min: minDate.format('YYYY-MM-DD'),
+            max: yesterday.format('YYYY-MM-DD'),
+            trigger: 'click',
+            theme: '#1890ff'
         });
     }
 
     initFileUpload() {
-        $('#fileInput').fileupload({
-            url: '/undelivery-import/import-account',
-            dataType: 'json',
-            autoUpload: false,
-            acceptFileTypes: /(\.|\/)(txt)$/i,
-            maxFileSize: 5000000, // 5 MB
-            
-            // 添加文件时的处理
-            add: (e, data) => {
-                if (!this.validateFile(data.files[0])) return;
-                
-                // 更新文件名显示
-                const fileName = data.files[0].name;
-                $(e.target).siblings('.custom-file-label').text(fileName);
-                
-                // 显示文件信息
-                $('.files').html(
-                    `<p class="text-muted">Selected: ${fileName} (${this.formatFileSize(data.files[0].size)})</p>`
-                );
-                
-                // 绑定上传按钮事件
-                $('.start').off('click').on('click', () => {
-                    data.submit();
-                });
-            },
-            
-            // 进度处理
-            progress: (e, data) => {
-                const progress = parseInt((data.loaded / data.total) * 100, 10);
-                $('.progress-bar')
-                    .css('width', progress + '%')
-                    .attr('aria-valuenow', progress)
-                    .text(progress + '%');
-                
-                $('.progress').show();
-            },
-            
-            // 上传成功
-            done: (e, data) => {
-                this.showMessage('File uploaded successfully');
-                this.updateUploadStats({ 
-                    file: data.files[0], 
-                    response: data.result 
-                });
-                $('.progress').hide();
-                $('.files').empty();
-                // 重置文件输入框显示
-                $('.custom-file-label').text('Choose file...');
-            },
-            
-            // 上传失败
-            fail: (e, data) => {
-                const error = data.jqXHR.responseText || 'Upload failed';
-                this.handleUploadError(error, data.files[0]);
-                $('.progress').hide();
+        $("#fileInput").fileinput({
+            theme: 'fa5',
+            language: 'en',
+            uploadUrl: '/undelivery-import/import-account',
+            allowedFileExtensions: ['txt'],
+            maxFileSize: 5000,
+            showClose: false,
+            showCaption: true,
+            showBrowse: true,
+            showUpload: true,
+            showRemove: true,
+            showCancel: false,
+            browseClass: 'btn btn-primary',
+            uploadClass: 'btn btn-info',
+            removeClass: 'btn btn-danger',
+            browseLabel: 'Browse',
+            uploadLabel: 'Upload',
+            removeLabel: 'Clear',
+            browseIcon: '<i class="fas fa-folder-open"></i> ',
+            uploadIcon: '<i class="fas fa-upload"></i> ',
+            removeIcon: '<i class="fas fa-trash"></i> ',
+            uploadAsync: true,
+            minFileCount: 1,  // 最小文件数
+            maxFileCount: 1,  // 最大文件数
+            msgNoFilesSelected: 'No file selected',  // 没有选择文件时的提示
+            msgFilesTooMany: 'Number of files selected for upload ({n}) exceeds maximum allowed limit of {m}.'  // 文件数超限的提示
+        }).on('fileuploaded', (event, data) => {
+            this.showMessage('File uploaded successfully');
+            this.updateUploadStats({ 
+                file: data.files[0], 
+                response: data.response 
+            });
+        }).on('fileuploaderror', (event, data, msg) => {
+            const errorMsg = data.response?.error || msg || 'Upload failed';
+            this.handleUploadError(errorMsg, data.files[0]);
+        }).on('fileclear', () => {
+            this.resetUploadStats();
+        }).on('fileselect', (event, numFiles, label) => {
+            // 检查是否已选择文件
+            if (numFiles === 0) {
+                this.showMessage('Please select a file first', 'warning');
+                return false;
+            }
+        }).on('filebatchuploaderror', (event, data, msg) => {
+            // 批量上传错误处理
+            this.showMessage(msg || 'Upload failed', 'error');
+        }).on('fileuploadstart', (event, data) => {
+            // 检查是否有文件被选择
+            if (!$(event.target).fileinput('getFilesCount')) {
+                this.showMessage('Please select a file first', 'warning');
+                return false;
             }
         });
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     bindEvents() {
-        // 生成报告相关事件
-        this.elements.generate.button?.addEventListener('click', () => {
+        // 使用可选链和代理
+        this.elements.generate?.button?.addEventListener('click', () => {
             this.debouncedGenerate(this.elements.generate.dateInput.value);
         });
 
-        // 文件上传相关事件
-        this.elements.upload.fileInput?.addEventListener('change', (e) => {
-            const fileName = e.target.files?.[0]?.name ?? 'Choose file';
-            const fileLabel = e.target.nextElementSibling;
-            if (fileLabel) {
-                fileLabel.textContent = fileName;
-            }
-        });
-
-        // 修改 tab 切换事件
         $('a[data-toggle="pill"]').on('shown.bs.tab', (e) => {
             const targetId = $(e.target).attr('href');
-            if (targetId === '#custom-tabs-one-general') {  // 切换到 Generate Statistics
+            if (targetId === '#custom-tabs-one-general') {
                 this.resetGenerateStats();
-                // 设置日期为昨天
-                if (this.elements.generate.dateInput) {
-                    const yesterday = moment().subtract(1, 'days');
-                    $(this.elements.generate.dateInput).data('daterangepicker').setStartDate(yesterday);
-                }
-            } else if (targetId === '#custom-tabs-one-upload') {  // 切换到 Upload
+            } else if (targetId === '#custom-tabs-one-upload') {
                 this.resetUploadStats();
             }
         });
+    }
+
+    resetGenerateStats() {
+        const { stats } = this.elements.generate;
+        if (stats) {
+            stats.date.textContent = '-';
+            stats.totalRecords.textContent = '-';
+            stats.status.innerHTML = '-';
+            stats.time.textContent = '-';
+        }
+
+        const result = this.elements.generate.result;
+        if (result) {
+            result.style.display = 'none';
+        }
+
+        const dateInput = this.elements.generate.dateInput;
+        if (dateInput) {
+            const yesterday = moment().subtract(1, 'days');
+            dateInput.value = yesterday.format('YYYY-MM-DD');
+        }
+    }
+
+    resetUploadStats() {
+        const { stats } = this.elements.upload;
+        stats.fileName.textContent = '-';
+        stats.totalLines.textContent = '-';
+        stats.status.innerHTML = '-';
+        stats.time.textContent = '-';
+        this.elements.upload.result.style.display = 'none';
+        this.elements.upload.form.reset();
     }
 
     // 添加防抖方法
@@ -237,77 +268,6 @@ class ImportPage extends BasePage {
         stats.time.textContent = new Date().toLocaleString();
     }
 
-    async uploadFile() {
-        const fileInput = this.elements.upload.fileInput;
-        const file = fileInput?.files[0];
-        if (!this.validateFile(file)) return;
-
-        const formData = new FormData();
-        formData.append('file', file);  // 确保参数名为 'file'
-
-        try {
-            await this.processUpload(formData, file);
-        } catch (error) {
-            console.error('Upload failed:', error);
-            this.handleUploadError(error, file);
-        }
-    }
-
-    validateFile(file) {
-        if (!file) {
-            this.showMessage('Please select a file', 'warning');
-            return false;
-        }
-        if (!file.name.toLowerCase().endsWith('.txt')) {
-            this.showMessage('Please select a txt file', 'warning');
-            return false;
-        }
-        return true;
-    }
-
-    async processUpload(formData, file) {
-        const button = this.elements.upload.uploadBtn;
-        
-        try {
-            button.disabled = true;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Uploading...';
-
-            const response = await fetch('/undelivery-import/import-account', {
-                method: 'POST',
-                body: formData  // 直接使用 FormData 对象
-            });
-
-            if (!response.ok) throw await response.text();
-            
-            const data = await response.json();
-            this.showMessage('File uploaded successfully');
-            this.resetUploadForm();
-            this.updateUploadStats({ file, response: data });
-
-        } finally {
-            button.disabled = false;
-            button.innerHTML = '<i class="fas fa-upload mr-1"></i> Upload';
-        }
-    }
-
-    resetUploadForm() {
-        // 重置表单
-        this.elements.upload.form.reset();
-        
-        // 更新文件标签文本
-        const fileLabel = this.elements.upload.fileLabel;
-        if (fileLabel) {
-            fileLabel.textContent = 'Choose file';
-        }
-        
-        // 隐藏进度条
-        $(this.elements.upload.progress.container).hide();
-        $(this.elements.upload.progress.bar)
-            .css('width', '0%')
-            .attr('aria-valuenow', 0)
-            .text('0%');
-    }
-
     updateUploadStats({ file, response = {}, error = '', isError = false }) {
         const { stats } = this.elements.upload;
         
@@ -333,39 +293,6 @@ class ImportPage extends BasePage {
             ? `<span class="badge badge-danger">Failed</span>
                <small class="text-danger ml-2">${this.escapeHtml(errorMessage)}</small>`
             : '<span class="badge badge-success">Success</span>';
-    }
-
-    // 修改重置生成统计的方法
-    resetGenerateStats() {
-        const { stats } = this.elements.generate;
-        if (stats) {
-            stats.date.textContent = '-';
-            stats.totalRecords.textContent = '-';
-            stats.status.innerHTML = '-';
-            stats.time.textContent = '-';
-        }
-        // 隐藏结果区域
-        if (this.elements.generate.result) {
-            this.elements.generate.result.style.display = 'none';
-        }
-        // 重置日期选择器为昨天
-        if (this.elements.generate.dateInput) {
-            const yesterday = moment().subtract(1, 'days');
-            $(this.elements.generate.dateInput).data('daterangepicker').setStartDate(yesterday);
-        }
-    }
-
-    // 添加重置上传统计的方法
-    resetUploadStats() {
-        const { stats } = this.elements.upload;
-        stats.fileName.textContent = '-';
-        stats.totalLines.textContent = '-';
-        stats.status.innerHTML = '-';
-        stats.time.textContent = '-';
-        this.elements.upload.result.style.display = 'none';
-        
-        // 重置文件选择
-        this.resetUploadForm();
     }
 }
 

@@ -76,4 +76,46 @@ class BasePage {
       };
       return classes[type] || 'bg-secondary';
   }
+
+  /**
+   * 防抖函数
+   * @param {Function} func 需要防抖的函数
+   * @param {number} wait 等待时间（毫秒）
+   * @returns {Function} 防抖后的函数
+   */
+  debounce(func, wait) {
+      let timeout;
+      return (...args) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+  }
+
+  /**
+   * 显示等待层
+   * @param {string} [message='Loading...'] - 显示的消息
+   * @returns {HTMLElement} - 等待层元素
+   */
+  showLoading(message = 'Loading...') {
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay';
+      overlay.innerHTML = `
+          <div class="overlay-content">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span class="ml-2">${message}</span>
+          </div>
+      `;
+      this.container.appendChild(overlay);
+      return overlay;
+  }
+
+  /**
+   * 隐藏等待层
+   * @param {HTMLElement} overlay - 等待层元素
+   */
+  hideLoading(overlay) {
+      if (overlay && overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay);
+      }
+  }
 }
