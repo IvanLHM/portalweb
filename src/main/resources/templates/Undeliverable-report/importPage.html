@@ -10,6 +10,7 @@
 <head>
     <title>Import Undelivery Record</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.2/css/fileinput.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui-laydate@5.3.1/src/theme/default/laydate.css">
 </head>
 <body>
     <div id="main-content">
@@ -121,18 +122,18 @@
                                                             <table class="table table-striped table-bordered m-0">
                                                                 <thead>
                                                                     <tr class="text-center">
-                                                                        <th style="width: 35%">File Name</th>
-                                                                        <th style="width: 20%">Total Lines</th>
-                                                                        <th style="width: 15%">Status</th>
-                                                                        <th style="width: 30%">Upload Time</th>
+                                                                        <th style="width: 25%">Date</th>
+                                                                        <th style="width: 25%">Total Records</th>
+                                                                        <th style="width: 25%">Status</th>
+                                                                        <th style="width: 25%">Time</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     <tr class="text-center">
-                                                                        <td class="text-left text-truncate" id="resultFileName">-</td>
-                                                                        <td id="resultTotalLines">-</td>
-                                                                        <td id="resultStatus">-</td>
-                                                                        <td id="resultTime">-</td>
+                                                                        <td id="uploadDate">-</td>
+                                                                        <td id="uploadTotalRecords">-</td>
+                                                                        <td id="uploadStatus">-</td>
+                                                                        <td id="uploadTime">-</td>
                                                                     </tr>
                                                                 </tbody>
                                                             </table>

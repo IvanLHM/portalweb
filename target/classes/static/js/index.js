@@ -1,19 +1,38 @@
-// 计算系统运行时间
-document.addEventListener('DOMContentLoaded', function() {
-    const startTime = new Date('2024-01-01').getTime(); // 设置系统上线时间
-    
-    function updateUptime() {
-        const now = new Date().getTime();
-        const diff = now - startTime;
-        
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        document.getElementById('uptime').textContent = 
-            `${days}天 ${hours}小时 ${minutes}分钟`;
+/**
+ * 首页类
+ */
+class IndexPage extends BasePage {
+    constructor() {
+        super();
+        this.container = document.querySelector('.content-wrapper');
+        this.initEvents();
     }
-    
-    updateUptime();
-    setInterval(updateUptime, 60000); // 每分钟更新一次
+
+    initEvents() {
+        // 添加快捷入口的点击事件
+        document.querySelectorAll('.small-box').forEach(box => {
+            box.addEventListener('click', (e) => {
+                const link = box.querySelector('.small-box-footer');
+                if (link && !e.target.closest('.small-box-footer')) {
+                    window.location.href = link.getAttribute('href');
+                }
+            });
+        });
+
+        // 添加导航栏点击事件
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+    }
+}
+
+// 初始化页面
+document.addEventListener('DOMContentLoaded', () => {
+    new IndexPage();
 }); 

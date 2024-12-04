@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UndeliverRecDailyMapper">
+    
+    <select id="findAll" resultType="com.example.demo.dto.UndeliverRecDaily">
+        SELECT 
+            id,
+            mobile_number as mobileNumber,
+            delivery_time as deliveryTime,
+            termination_time as terminationTime,
+            created_time as createdTime,
+            created_by as createdBy,
+            last_modified_by as lastModifiedBy,
+            last_modified_time as lastModifiedTime
+        FROM tbl_undeliver_rec_daily
+        ORDER BY delivery_time DESC
+    </select>
+
+    <select id="findByDate" resultType="com.example.demo.dto.UndeliverRecDaily">
+        SELECT 
+            id,
+            mobile_number as mobileNumber,
+            delivery_time as deliveryTime,
+            termination_time as terminationTime,
+            created_time as createdTime,
+            created_by as createdBy,
+            last_modified_by as lastModifiedBy,
+            last_modified_time as lastModifiedTime
+        FROM tbl_undeliver_rec_daily
+        WHERE DATE(delivery_time) = #{date}
+        ORDER BY delivery_time DESC
+    </select>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO tbl_undeliver_rec_daily (
+            id, 
+            mobile_number, 
+            delivery_time, 
+            termination_time,
+            created_time, 
+            created_by, 
+            last_modified_by, 
+            last_modified_time
+        ) VALUES 
+        <foreach collection="list" item="record" separator=",">
+            (
+                #{record.id},
+                #{record.mobileNumber},
+                #{record.deliveryTime},
+                #{record.terminationTime},
+                CURRENT_TIMESTAMP,
+                'SYSTEM',
+                'SYSTEM',
+                CURRENT_TIMESTAMP
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM tbl_undeliver_rec_daily
+    </delete>
+
+    <delete id="deleteByDate">
+        DELETE FROM tbl_undeliver_rec_daily
+        WHERE DATE(delivery_time) = #{date}
+    </delete>
+
+    <select id="findFailedSmsRecords" resultType="com.example.demo.dto.UndeliverRecDaily">
+        SELECT 
+            mobile_number as mobileNumber,
+            submit_time as deliveryTime,
+            send_time as terminationTime
+        FROM tbl_sms_message 
+        WHERE status = 'Fail'
+        AND sender = '10690000'
+        AND reason IN ('101,UNDELIV', '001,UNDELIV', 'EXPIRED')
+        AND DATE(submit_time) = #{date}
+    </select>
+
+    <insert id="generateDailyData" parameterType="java.time.LocalDate">
+        INSERT INTO tbl_undeliver_rec_daily (
+            id, 
+            mobile_number, 
+            delivery_time, 
+            termination_time,
+            created_time, 
+            created_by, 
+            last_modified_by, 
+            last_modified_time
+        )
+        SELECT 
+            nextval('seq_undeliver_rec_daily'), 
+            mobile_number,
+            submit_time as delivery_time,
+            send_time as termination_time,
+            CURRENT_TIMESTAMP,
+            'SYSTEM',
+            'SYSTEM',
+            CURRENT_TIMESTAMP
+        FROM tbl_sms_message
+        WHERE status = 'Fail'
+        AND sender = '10690000'
+        AND reason IN ('101,UNDELIV', '001,UNDELIV', 'EXPIRED')
+        AND DATE(submit_time) = #{date}
+    </insert>
+</mapper>

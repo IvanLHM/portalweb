@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UnreachedAccountMapper">
+    
+    <select id="findAll" resultType="com.example.demo.dto.UnreachedAccount">
+        SELECT 
+            a.id,
+            a.accountNo,
+            a.reason_id as reasonId,
+            r.description as reasonDescription,
+            a.created_time as createdTime,
+            a.created_by as createdBy,
+            a.last_modified_by as lastModifiedBy,
+            a.last_modified_time as lastModifiedTime
+        FROM tbl_unreached_acct a
+        LEFT JOIN tbl_unreached_reason r ON a.reason_id = r.id
+        ORDER BY a.created_time DESC
+    </select>
+    
+    <select id="findByAccountNo" resultType="com.example.demo.dto.UnreachedAccount">
+        SELECT 
+            id,
+            accountNo,
+            reason_id as reasonId,
+            created_time as createdTime,
+            created_by as createdBy,
+            last_modified_by as lastModifiedBy,
+            last_modified_time as lastModifiedTime
+        FROM tbl_unreached_acct
+        WHERE accountNo = #{accountNo}
+    </select>
+    
+    <insert id="insert" parameterType="com.example.demo.dto.UnreachedAccount">
+        INSERT INTO tbl_unreached_acct (
+            id, accountNo, reason_id,
+            created_time, created_by, last_modified_by, last_modified_time
+        ) VALUES (
+            #{id}, #{accountNo}, #{reasonId},
+            CURRENT_TIMESTAMP, #{createdBy}, #{lastModifiedBy}, CURRENT_TIMESTAMP
+        )
+    </insert>
+    
+    <update id="update">
+        UPDATE tbl_unreached_acct
+        SET accountNo = #{accountNo},
+            reason_id = #{reasonId},
+            last_modified_by = #{lastModifiedBy},
+            last_modified_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM tbl_unreached_acct WHERE id = #{id}
+    </delete>
+    
+    <insert id="batchInsert">
+        INSERT INTO tbl_unreached_acct (
+            id, accountNo, reason_id,
+            created_time, created_by, last_modified_by, last_modified_time
+        ) VALUES 
+        <foreach collection="list" item="record" separator=",">
+            (
+                #{record.id},
+                #{record.accountNo},
+                #{record.reasonId},
+                CURRENT_TIMESTAMP,
+                #{record.createdBy},
+                #{record.lastModifiedBy},
+                CURRENT_TIMESTAMP
+            )
+        </foreach>
+    </insert>
+</mapper> 

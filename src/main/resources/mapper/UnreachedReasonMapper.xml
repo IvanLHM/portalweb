@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UnreachedReasonMapper">
+    <select id="getReasonList" resultType="com.example.demo.dto.UnreachedReason">
+        SELECT 
+            id,
+            description,
+            created_time as createdTime,
+            created_by as createdBy,
+            last_modified_by as lastModifiedBy,
+            last_modified_time as lastModifiedTime
+        FROM tbl_unreached_reason
+        ORDER BY id
+    </select>
+    
+    <insert id="insert">
+        INSERT INTO tbl_unreached_reason (
+            id, description, created_time, created_by, 
+            last_modified_by, last_modified_time
+        ) VALUES (
+            #{id}, #{description}, CURRENT_TIMESTAMP, #{createdBy},
+            #{lastModifiedBy}, CURRENT_TIMESTAMP
+        )
+    </insert>
+    
+    <update id="update">
+        UPDATE tbl_unreached_reason
+        SET description = #{description},
+            last_modified_by = #{lastModifiedBy},
+            last_modified_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM tbl_unreached_reason WHERE id = #{id}
+    </delete>
+</mapper> 

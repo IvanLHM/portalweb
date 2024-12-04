@@ -9,7 +9,17 @@ spring:
     url: jdbc:postgresql://localhost:5432/demo
     username: postgres
     password: 2564
-    
+  mvc:
+    view:
+      prefix: /templates/
+      suffix: .html
+  thymeleaf:
+    cache: false
+    mode: HTML
+    encoding: UTF-8
+    servlet:
+      content-type: text/html
+
 mybatis:
   configuration:
     map-underscore-to-camel-case: true

@@ -1,74 +1,54 @@
 package com.example.demo.aspect;
 
-import com.example.demo.annotation.OperationLog;
-import com.example.demo.entity.UndeliverableAccount;
-import com.example.demo.entity.UndeliverableReason;
+import cn.hutool.json.JSONUtil;
+import com.example.demo.dto.OperationLog;
 import com.example.demo.service.OperationLogService;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
 
 @Aspect
 @Component
 public class OperationLogAspect {
-
+    
     @Autowired
     private OperationLogService operationLogService;
-
-    @Around("@annotation(operationLog)")
-    public Object around(ProceedingJoinPoint point, OperationLog operationLog) throws Throwable {
-        // 获取方法参数
-        Object[] args = point.getArgs();
-        Object entity = null;
-        String module = "ACCOUNT";  // 默认模块
-        
-        // 查找需要记录的实体对象
-        for (Object arg : args) {
-            if (arg instanceof UndeliverableAccount) {
-                entity = arg;
-                module = "ACCOUNT";
-                break;
-            } else if (arg instanceof UndeliverableReason) {
-                entity = arg;
-                module = "REASON";
-                break;
-            }
+    
+    @Pointcut("@annotation(com.example.demo.annotation.LogOperation)")
+    public void logPointcut() {}
+    
+    @AfterReturning(value = "logPointcut()", returning = "result")
+    public void afterReturning(JoinPoint joinPoint, Object result) {
+        try {
+            // 获取方法签名
+            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+            Method method = signature.getMethod();
+            
+            // 获取注解信息
+            com.example.demo.annotation.LogOperation logAnnotation = 
+                method.getAnnotation(com.example.demo.annotation.LogOperation.class);
+            
+            // 构建日志对象
+            OperationLog log = new OperationLog();
+            log.setOperationType(logAnnotation.type());
+            log.setModule(logAnnotation.module());
+            log.setOperationDesc(logAnnotation.desc());
+            log.setOperationData(result != null ? JSONUtil.toJsonStr(result) : null);
+            log.setOperator("SYSTEM");  // 可以从SecurityContext中获取当前用户
+            
+            // 保存日志
+            operationLogService.saveLog(log);
+            
+        } catch (Exception e) {
+            // 记录日志失败不应影响业务操作
+            System.err.println("Failed to save operation log: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        // 执行原方法
-        Object result = point.proceed();
-
-        if (entity != null) {
-            // 记录操作日志
-            operationLogService.log(
-                operationLog.operationType(),
-                module,
-                String.format("%s - %s", 
-                    operationLog.description(),
-                    getEntityDescription(entity)
-                ),
-                entity
-            );
-        }
-
-        return result;
-    }
-
-    /**
-     * 获取实体的描述信息
-     */
-    private String getEntityDescription(Object entity) {
-        if (entity instanceof UndeliverableAccount) {
-            return "Account: " + ((UndeliverableAccount) entity).getAccount();
-        } else if (entity instanceof UndeliverableReason) {
-            UndeliverableReason reason = (UndeliverableReason) entity;
-            return String.format("Reason: REASON_%04d - %s", 
-                reason.getId(), 
-                reason.getDescription());
-        }
-        return "";
     }
 } 

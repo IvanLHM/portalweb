@@ -162,7 +162,7 @@ class AccountMaintenancePage extends BasePage {
     async loadData() {
         const overlay = this.showLoading('Loading accounts...');
         try {
-            const response = await fetch('/undeliverable-report/api/accounts');
+            const response = await fetch('/account-maintenance/list');
             if (!response.ok) throw new Error('Network response was not ok');
             
             const accounts = await response.json();
@@ -178,7 +178,7 @@ class AccountMaintenancePage extends BasePage {
     async loadReasonsList() {
         const overlay = this.showLoading('Loading reasons...');
         try {
-            const response = await fetch('/undeliverable-report/api/reasons');
+            const response = await fetch('/reasons/list');
             if (!response.ok) throw new Error('Failed to load reasons');
             
             const reasons = await response.json();
@@ -211,9 +211,9 @@ class AccountMaintenancePage extends BasePage {
     createAccountRow(account) {
         return `
             <tr data-id="${account.id}">
-                <td>${this.escapeHtml(account.account)}</td>
-                <td>${this.escapeHtml(account.description || '')}</td>
-                <td>${this.formatDate(account.lastUpdate)}</td>
+                <td>${this.escapeHtml(account.accountNo)}</td>
+                <td>${this.escapeHtml(account.reasonDescription || '-')}</td>
+                <td>${account.lastModifiedTime || '-'}</td>
                 <td>
                     <div class="btn-group">
                         ${this.createActionButtons(account)}
@@ -226,7 +226,7 @@ class AccountMaintenancePage extends BasePage {
     createActionButtons(account) {
         return `
             <button class="btn btn-sm btn-info edit-btn" 
-                    data-account="${this.escapeHtml(account.account)}"
+                    data-account="${this.escapeHtml(account.accountNo)}"
                     data-reason-id="${String(account.reasonId)}"
                     title="Edit">
                 <i class="fas fa-edit"></i>
@@ -236,7 +236,7 @@ class AccountMaintenancePage extends BasePage {
                 <i class="fas fa-trash"></i>
             </button>
             <button class="btn btn-sm btn-primary logs-btn" 
-                    data-account="${this.escapeHtml(account.account)}"
+                    data-account="${this.escapeHtml(account.accountNo)}"
                     title="Operation Logs">
                 <i class="fas fa-list-alt"></i>
             </button>
@@ -245,36 +245,31 @@ class AccountMaintenancePage extends BasePage {
 
     initFormValidation() {
         $(this.elements.form.container).validate({
-            rules: AccountMaintenancePage.#config.validation.rules,
-            messages: AccountMaintenancePage.#config.validation.messages,
+            rules: {
+                account: {
+                    required: true,
+                    minlength: 3,
+                    maxlength: 100
+                },
+                reason: {
+                    required: true
+                }
+            },
+            messages: {
+                account: {
+                    required: "Please enter account number",
+                    minlength: "Account number must be at least 3 characters",
+                    maxlength: "Account number cannot exceed 100 characters"
+                },
+                reason: {
+                    required: "Please select a reason"
+                }
+            },
             errorElement: 'div',
             errorClass: 'invalid-feedback',
             highlight: element => $(element).addClass('is-invalid'),
-            unhighlight: element => $(element).removeClass('is-invalid'),
-            submitHandler: (form, event) => {
-                event.preventDefault();
-                this.saveAccount();
-            }
+            unhighlight: element => $(element).removeClass('is-invalid')
         });
-
-        // 添加实时验证
-        const accountInput = this.elements.form.inputs.account;
-        if (accountInput) {
-            accountInput.addEventListener('input', e => {
-                const input = e.target;
-                if (input.value) {
-                    if (input.validity.valid) {
-                        input.classList.remove('is-invalid');
-                        input.classList.remove('is-valid');
-                    } else {
-                        input.classList.remove('is-valid');
-                        input.classList.add('is-invalid');
-                    }
-                } else {
-                    input.classList.remove('is-valid', 'is-invalid');
-                }
-            });
-        }
     }
 
     async saveAccount() {
@@ -286,7 +281,7 @@ class AccountMaintenancePage extends BasePage {
         
         try {
             const response = await fetch(
-                id ? `/undeliverable-report/api/accounts/${id}` : '/undeliverable-report/api/accounts', 
+                id ? `/account-maintenance/${id}` : '/account-maintenance', 
                 {
                     method: id ? 'PUT' : 'POST',
                     headers: {
@@ -316,7 +311,7 @@ class AccountMaintenancePage extends BasePage {
     getFormData() {
         return {
             id: this.elements.form.inputs.id.value || null,
-            account: this.elements.form.inputs.account.value,
+            accountNo: this.elements.form.inputs.account.value,
             reasonId: this.elements.form.inputs.reason.value
         };
     }
@@ -355,7 +350,7 @@ class AccountMaintenancePage extends BasePage {
 
         const overlay = this.showLoading('Deleting account...');
         try {
-            const response = await fetch(`/undeliverable-report/api/accounts/${id}`, {
+            const response = await fetch(`/account-maintenance/${id}`, {
                 method: 'DELETE'
             });
             
@@ -376,7 +371,7 @@ class AccountMaintenancePage extends BasePage {
         
         const overlay = this.showLoading('Loading logs...');
         try {
-            const response = await fetch(`/undeliverable-report/api/accounts/${id}/logs`);
+            const response = await fetch(`/account-maintenance/${id}/logs`);
             if (!response.ok) throw new Error(await response.text());
             
             const logs = await response.json();

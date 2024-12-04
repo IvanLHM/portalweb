@@ -20,10 +20,10 @@ class ImportPage extends BasePage {
             fileInput: '#fileInput',
             result: '#uploadResult',
             stats: {
-                fileName: '#resultFileName',
-                totalLines: '#resultTotalLines',
-                status: '#resultStatus',
-                time: '#resultTime'
+                date: '#uploadDate',
+                totalRecords: '#uploadTotalRecords',
+                status: '#uploadStatus',
+                time: '#uploadTime'
             }
         }
     };
@@ -109,7 +109,7 @@ class ImportPage extends BasePage {
         $("#fileInput").fileinput({
             theme: 'fa5',
             language: 'en',
-            uploadUrl: '/undelivery-import/import-account',
+            uploadUrl: '/margin-trade-limit/import',
             allowedFileExtensions: ['txt'],
             maxFileSize: 5000,
             showClose: false,
@@ -128,36 +128,16 @@ class ImportPage extends BasePage {
             uploadIcon: '<i class="fas fa-upload"></i> ',
             removeIcon: '<i class="fas fa-trash"></i> ',
             uploadAsync: true,
-            minFileCount: 1,  // 最小文件数
-            maxFileCount: 1,  // 最大文件数
-            msgNoFilesSelected: 'No file selected',  // 没有选择文件时的提示
-            msgFilesTooMany: 'Number of files selected for upload ({n}) exceeds maximum allowed limit of {m}.'  // 文件数超限的提示
+            minFileCount: 1,
+            maxFileCount: 1,
+            msgNoFilesSelected: 'No file selected',
+            msgFilesTooMany: 'Number of files selected for upload ({n}) exceeds maximum allowed limit of {m}.'
         }).on('fileuploaded', (event, data) => {
             this.showMessage('File uploaded successfully');
             this.updateUploadStats({ 
                 file: data.files[0], 
                 response: data.response 
             });
-        }).on('fileuploaderror', (event, data, msg) => {
-            const errorMsg = data.response?.error || msg || 'Upload failed';
-            this.handleUploadError(errorMsg, data.files[0]);
-        }).on('fileclear', () => {
-            this.resetUploadStats();
-        }).on('fileselect', (event, numFiles, label) => {
-            // 检查是否已选择文件
-            if (numFiles === 0) {
-                this.showMessage('Please select a file first', 'warning');
-                return false;
-            }
-        }).on('filebatchuploaderror', (event, data, msg) => {
-            // 批量上传错误处理
-            this.showMessage(msg || 'Upload failed', 'error');
-        }).on('fileuploadstart', (event, data) => {
-            // 检查是否有文件被选择
-            if (!$(event.target).fileinput('getFilesCount')) {
-                this.showMessage('Please select a file first', 'warning');
-                return false;
-            }
         });
     }
 
@@ -200,12 +180,20 @@ class ImportPage extends BasePage {
 
     resetUploadStats() {
         const { stats } = this.elements.upload;
-        stats.fileName.textContent = '-';
-        stats.totalLines.textContent = '-';
-        stats.status.innerHTML = '-';
-        stats.time.textContent = '-';
-        this.elements.upload.result.style.display = 'none';
-        this.elements.upload.form.reset();
+        if (stats) {
+            stats.date.textContent = '-';
+            stats.totalRecords.textContent = '-';
+            stats.status.innerHTML = '-';
+            stats.time.textContent = '-';
+        }
+        
+        if (this.elements.upload.result) {
+            this.elements.upload.result.style.display = 'none';
+        }
+        
+        if (this.elements.upload.form) {
+            this.elements.upload.form.reset();
+        }
     }
 
     // 添加防抖方法
@@ -230,7 +218,7 @@ class ImportPage extends BasePage {
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Generating...';
             result.style.display = 'none';
 
-            const response = await fetch('/undelivery-import/generate-mobile-no', {
+            const response = await fetch('/margin-trade-limit/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -271,8 +259,8 @@ class ImportPage extends BasePage {
     updateUploadStats({ file, response = {}, error = '', isError = false }) {
         const { stats } = this.elements.upload;
         
-        stats.fileName.textContent = file.name;
-        stats.totalLines.textContent = isError ? '0' : response.totalLines;
+        stats.date.textContent = new Date().toLocaleDateString();
+        stats.totalRecords.textContent = isError ? '0' : response.totalRecords;
         stats.status.innerHTML = this.getStatusHtml(isError, error);
         stats.time.textContent = new Date().toLocaleString();
 

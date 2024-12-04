@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="common/admin-layout :: html(
+        ~{::title},
+        ~{::#main-content},
+        ~{::link},
+        ~{::script},
+        'Print Margin Report'
+      )">
+<head>
+    <title>Print Margin Report</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.bootstrap4.min.css">
+</head>
+<body>
+    <div id="main-content">
+        <section class="content">
+            <div class="container-fluid">
+                <!-- 欢迎页面 -->
+                <div id="welcome-section" class="text-center">
+                    <div class="mt-5">
+                        <i class="fas fa-file-alt fa-5x text-primary mb-4"></i>
+                        <h2>Welcome to Print Margin Report</h2>
+                        <p class="lead">Click the button below to generate report</p>
+                        <button id="generateBtn" class="btn btn-primary btn-lg mt-3">
+                            <i class="fas fa-file-alt mr-2"></i>General Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 报表页面 -->
+                <div id="report-section" style="display: none;">
+                    <!-- 按钮组，使用 d-flex justify-content-between 来实现两端对齐 -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <!-- 左侧返回按钮 -->
+                        <button id="backBtn" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Back
+                        </button>
+                        <!-- 右侧按钮组 -->
+                        <div>
+                            <button id="printBtn" class="btn btn-info mr-2">
+                                <i class="fas fa-print mr-1"></i> Print All
+                            </button>
+                            <button id="exportBtn" class="btn btn-success">
+                                <i class="fas fa-file-excel mr-1"></i> Export All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 第一个表格 -->
+                    <div class="row">
+                        <div class="col-12">
+                          <div class="card">
+                            <div class="card-header">
+                              <h3 class="card-title">Margin Customers Not in User Snap</h3>
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body">
+                              <table id="table1" class="table table-bordered table-hover">
+                                <thead>
+                                <tr>
+                                    <th>Securities Account</th>
+                                    <th>Account Name</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                               
+                                </tbody>
+                              </table>
+                            </div>
+                            <!-- /.card-body -->
+                          </div>
+                          <!-- /.card -->
+                        </div>
+                        <!-- /.col -->
+                      </div>
+
+                    <!-- 第二个表格 -->
+                    <div class="row">
+                        <div class="col-12">
+                          <div class="card">
+                            <div class="card-header">
+                              <h3 class="card-title">Undeliverable Margin Customers</h3>
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body">
+                              <table id="table2" class="table table-bordered table-hover">
+                                <thead>
+                                <tr>
+                                    <th>Securities Account</th>
+                                    <th>User No</th>
+                                    <th>Account Name</th>
+                                    <th>Phone Number</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                               
+                                </tbody>
+                              </table>
+                            </div>
+                            <!-- /.card-body -->
+                          </div>
+                          <!-- /.card -->
+                        </div>
+                        <!-- /.col -->
+                      </div>                    
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- JS -->
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.bootstrap4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+    <script th:src="@{/js/undeliverable-report/printReport.js}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</body>
+</html> 

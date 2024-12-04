@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.PrintReportMapper">
+    
+    <select id="findMarginCustomersNotInUserSnap" resultType="com.example.demo.dto.MarginReportDTO">
+        SELECT 
+            a.sec_Acc_No as secAccNo,
+            a.sec_Acc_Name as secAccName
+        FROM tbl_margin_tradelimit_daily a 
+        WHERE a.margin_Flag = 'Y' 
+        AND NOT EXISTS (
+            SELECT 1 
+            FROM tbl_user_snap 
+            WHERE sec_Acc_No_9Digit = a.sec_Acc_No_9Digit
+        ) 
+        ORDER BY a.sec_Acc_No
+    </select>
+
+    <select id="findUndeliverableMarginCustomers" resultType="com.example.demo.dto.MarginReportDTO">
+        SELECT DISTINCT 
+            a.sec_Acc_No as secAccNo,
+            b.user_no as userNo,
+            a.sec_Acc_Name as secAccName,
+            b.tel_no as telNo
+        FROM tbl_margin_tradelimit_daily a
+        INNER JOIN tbl_user_snap b ON a.sec_Acc_No_9Digit = b.sec_Acc_No_9Digit
+        INNER JOIN tbl_undeliver_rec_daily c ON b.tel_no = c.mobile_number
+        WHERE a.margin_Flag = 'Y'
+        ORDER BY a.sec_Acc_No, b.user_no ASC
+    </select>
+    
+</mapper> 

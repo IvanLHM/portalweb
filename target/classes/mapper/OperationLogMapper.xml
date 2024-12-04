@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.OperationLogMapper">
+    
+    <insert id="insert">
+        INSERT INTO operation_logs (
+            id, operation_type, module, operation_desc, 
+            operation_data, operator, created_at
+        ) VALUES (
+            #{id}, #{operationType}, #{module}, #{operationDesc},
+            #{operationData}::jsonb, #{operator}, CURRENT_TIMESTAMP
+        )
+    </insert>
+    
+    <select id="findAll" resultType="com.example.demo.dto.OperationLog">
+        SELECT 
+            id,
+            operation_type as operationType,
+            module,
+            operation_desc as operationDesc,
+            operation_data::text as operationData,
+            operator,
+            created_at as createdAt
+        FROM operation_logs
+        ORDER BY created_at DESC
+    </select>
+    
+    <select id="findByModule" resultType="com.example.demo.dto.OperationLog">
+        SELECT 
+            id,
+            operation_type as operationType,
+            module,
+            operation_desc as operationDesc,
+            operation_data::text as operationData,
+            operator,
+            created_at as createdAt
+        FROM operation_logs
+        WHERE module = #{module}
+        ORDER BY created_at DESC
+    </select>
+    
+    <select id="findByOperator" resultType="com.example.demo.dto.OperationLog">
+        SELECT 
+            id,
+            operation_type as operationType,
+            module,
+            operation_desc as operationDesc,
+            operation_data::text as operationData,
+            operator,
+            created_at as createdAt
+        FROM operation_logs
+        WHERE operator = #{operator}
+        ORDER BY created_at DESC
+    </select>
+</mapper> 

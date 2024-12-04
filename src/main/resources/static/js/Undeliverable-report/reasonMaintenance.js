@@ -13,12 +13,14 @@ class ReasonMaintenancePage extends BasePage {
             rules: {
                 description: {
                     required: true,
+                    minlength: 3,
                     maxlength: 200
                 }
             },
             messages: {
                 description: {
-                    required: "Please enter description",
+                    required: "Please enter reason description",
+                    minlength: "Description must be at least 3 characters",
                     maxlength: "Description cannot exceed 200 characters"
                 }
             }
@@ -151,7 +153,7 @@ class ReasonMaintenancePage extends BasePage {
     async loadData() {
         const overlay = this.showLoading('Loading reasons...');
         try {
-            const response = await fetch('/undeliverable-report/api/reasons');
+            const response = await fetch('/reasons-maintenance/list');
             if (!response.ok) throw new Error('Network response was not ok');
             
             const reasons = await response.json();
@@ -169,19 +171,20 @@ class ReasonMaintenancePage extends BasePage {
         this.toggleView(hasReasons);
 
         if (hasReasons) {
-            const html = reasons.map(this.createReasonRow.bind(this)).join('');
+            // 按照 id 排序
+            const sortedReasons = reasons.sort((a, b) => a.id - b.id);
+            const html = sortedReasons.map(this.createReasonRow.bind(this)).join('');
             this.elements.table.body.innerHTML = html;
         }
     }
 
     createReasonRow(reason) {
-        const id = String(reason.id);
         return `
-            <tr data-id="${id}">
-                <td>${id}</td>
+            <tr data-id="${reason.id}">
+                <td style="width: 80px;" class="text-center">${reason.id}</td>
                 <td>${this.escapeHtml(reason.description)}</td>
-                <td>${this.formatDate(reason.createdAt)}</td>
-                <td>
+                <td style="width: 180px;" class="text-center">${reason.lastModifiedTime || '-'}</td>
+                <td style="width: 120px;" class="text-center">
                     <div class="btn-group">
                         ${this.createActionButtons(reason)}
                     </div>
@@ -251,7 +254,7 @@ class ReasonMaintenancePage extends BasePage {
         
         try {
             const response = await fetch(
-                id ? `/undeliverable-report/api/reasons/${id}` : '/undeliverable-report/api/reasons', 
+                id ? `/reasons-maintenance/${id}` : '/reasons-maintenance', 
                 {
                     method: id ? 'PUT' : 'POST',
                     headers: {
@@ -313,7 +316,7 @@ class ReasonMaintenancePage extends BasePage {
 
         const overlay = this.showLoading('Deleting reason...');
         try {
-            const response = await fetch(`/undeliverable-report/api/reasons/${id}`, {
+            const response = await fetch(`/reasons-maintenance/${id}`, {
                 method: 'DELETE'
             });
             
@@ -348,12 +351,12 @@ class ReasonMaintenancePage extends BasePage {
         };
     }
 
-    async showOperationLogs(id, reasonCode) {
+    async showOperationLogs(id, description) {
         if (!id) return;
         
         const overlay = this.showLoading('Loading logs...');
         try {
-            const response = await fetch(`/undeliverable-report/api/reasons/${id}/logs`);
+            const response = await fetch(`/reasons-maintenance/${id}/logs`);
             if (!response.ok) throw new Error(await response.text());
             
             const logs = await response.json();
@@ -362,7 +365,7 @@ class ReasonMaintenancePage extends BasePage {
             const $logLabel = $(this.elements.logs.label);
             const $logTimeline = $(this.elements.logs.timeline);
 
-            $logLabel.text(`Operation Logs - Reason: ${reasonCode}`);
+            $logLabel.text(`Operation Logs - Reason: ${description}`);
             
             if (!logs || logs.length === 0) {
                 $logTimeline.html(this.getEmptyLogsHtml());
@@ -378,8 +381,6 @@ class ReasonMaintenancePage extends BasePage {
             this.hideLoading(overlay);
         }
     }
-
-    // ... 其他方法保持类似的优化方式 ...
 }
 
 document.addEventListener('DOMContentLoaded', () => {

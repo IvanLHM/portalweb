@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.MarginTradeLimitDailyMapper">
+    <insert id="batchInsert">
+        INSERT INTO tbl_margin_tradelimit_daily (
+            id, sec_Acc_No, sec_Acc_No_9Digit, sec_Acc_Name, margin_Flag,
+            created_time, created_by, last_modified_by, last_modified_time
+        ) VALUES 
+        <foreach collection="records" item="record" separator=",">
+            (
+                #{record.id},
+                #{record.secAccNo},
+                #{record.secAccNo9Digit},
+                #{record.secAccName},
+                #{record.marginFlag},
+                CURRENT_TIMESTAMP,
+                #{record.createdBy},
+                #{record.lastModifiedBy},
+                CURRENT_TIMESTAMP
+            )
+        </foreach>
+    </insert>
+    
+    <select id="findAll" resultType="com.example.demo.dto.MarginTradeLimitDaily">
+        SELECT 
+            id,
+            sec_Acc_No as secAccNo,
+            sec_Acc_No_9Digit as secAccNo9Digit,
+            sec_Acc_Name as secAccName,
+            margin_Flag as marginFlag,
+            created_time as createdTime,
+            created_by as createdBy,
+            last_modified_by as lastModifiedBy,
+            last_modified_time as lastModifiedTime
+        FROM tbl_margin_tradelimit_daily
+    </select>
+    
+    <delete id="deleteAll">
+        DELETE FROM tbl_margin_tradelimit_daily
+    </delete>
+</mapper> 
