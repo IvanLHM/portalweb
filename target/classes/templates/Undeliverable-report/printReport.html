@@ -17,16 +17,78 @@
         <section class="content">
             <div class="container-fluid">
                 <!-- 欢迎页面 -->
-                <div id="welcome-section" class="text-center">
-                    <div class="mt-5">
-                        <i class="fas fa-file-alt fa-5x text-primary mb-4"></i>
-                        <h2>Welcome to Print Margin Report</h2>
-                        <p class="lead">Click the button below to generate report</p>
-                        <button id="generateBtn" class="btn btn-primary btn-lg mt-3">
-                            <i class="fas fa-file-alt mr-2"></i>General Report
+                <div id="welcome-section" class="welcome-container">
+                    <div class="welcome-card">
+                        <div class="welcome-icon">
+                            <i class="fas fa-chart-line fa-4x text-primary animated-icon"></i>
+                        </div>
+                        <h2 class="welcome-title">Print Margin Report</h2>
+                        <p class="welcome-description">Generate comprehensive margin reports with just one click</p>
+                        <button id="generateBtn" class="btn btn-primary btn-lg welcome-button">
+                            <i class="fas fa-file-alt mr-2"></i>Generate Report
                         </button>
                     </div>
                 </div>
+
+                <style>
+                    .welcome-container {
+                        min-height: calc(100vh - 100px);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+                        margin: -1rem;
+                        padding: 1rem;
+                    }
+                    .welcome-card {
+                        background: white;
+                        padding: 3rem;
+                        border-radius: 15px;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        text-align: center;
+                        max-width: 600px;
+                        width: 90%;
+                        transition: transform 0.3s ease;
+                    }
+                    .welcome-card:hover {
+                        transform: translateY(-5px);
+                    }
+                    .welcome-icon {
+                        margin-bottom: 2rem;
+                    }
+                    .animated-icon {
+                        animation: pulse 2s infinite;
+                    }
+                    .welcome-title {
+                        color: #2c3e50;
+                        font-size: 2.5rem;
+                        margin-bottom: 1rem;
+                        font-weight: 600;
+                    }
+                    .welcome-description {
+                        color: #7f8c8d;
+                        font-size: 1.2rem;
+                        margin-bottom: 2rem;
+                    }
+                    .welcome-button {
+                        padding: 1rem 2rem;
+                        font-size: 1.1rem;
+                        border-radius: 30px;
+                        transition: all 0.3s ease;
+                        background: #3498db;
+                        border: none;
+                    }
+                    .welcome-button:hover {
+                        background: #2980b9;
+                        transform: scale(1.05);
+                        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+                    }
+                    @keyframes pulse {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.1); }
+                        100% { transform: scale(1); }
+                    }
+                </style>
 
                 <!-- 报表页面 -->
                 <div id="report-section" style="display: none;">
@@ -110,6 +172,7 @@
     </div>
 
     <!-- JS -->
+    <!-- 先加载基础库 -->
     <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
@@ -119,7 +182,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
-    <script th:src="@{/js/undeliverable-report/printReport.js}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+
+    <!-- 加载基础类 -->
+    <script th:src="@{/js/undeliverable-report/base.js}"></script>
+
+    <!-- 最后加载页面特定的JS -->
+    <script th:src="@{/js/undeliverable-report/printReport.js}"></script>
 </body>
 </html> 

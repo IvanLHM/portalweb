@@ -6,8 +6,9 @@ import java.util.List;
 
 @Mapper
 public interface UnreachedReasonMapper {
-    List<UnreachedReason> getReasonList();
+    List<UnreachedReason> selectAll();
     void insert(UnreachedReason reason);
     void update(UnreachedReason reason);
-    void deleteById(Long id);
+    void delete(Long id);
+    UnreachedReason selectById(Long id);
 } 

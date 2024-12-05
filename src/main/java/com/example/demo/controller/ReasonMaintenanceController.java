@@ -8,7 +8,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/reasons-maintenance")
@@ -25,8 +26,26 @@ public class ReasonMaintenanceController {
     
     @GetMapping("/list")
     @ResponseBody
-    public ResponseEntity<List<UnreachedReason>> getAllReasons() {
-        return ResponseEntity.ok(unreachedReasonService.getAllReasons());
+    public Map<String, Object> getAllReasons(
+            @RequestParam(value = "draw", defaultValue = "1") int draw,
+            @RequestParam(value = "start", defaultValue = "0") int start,
+            @RequestParam(value = "length", defaultValue = "10") int length) {
+        
+        // 计算页码
+        int pageNum = (start / length) + 1;
+        
+        // 获取总记录数和分页数据
+        long total = unreachedReasonService.count();
+        var data = unreachedReasonService.findPage(length, pageNum);
+        
+        // 构造 DataTable 需要的响应格式
+        Map<String, Object> response = new HashMap<>();
+        response.put("draw", draw);
+        response.put("recordsTotal", total);
+        response.put("recordsFiltered", total);
+        response.put("data", data);
+        
+        return response;
     }
     
     @PostMapping

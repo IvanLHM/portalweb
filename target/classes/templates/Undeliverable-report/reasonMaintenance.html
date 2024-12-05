@@ -9,8 +9,10 @@
       )}">
 <head>
     <title>Reason Maintenance - Unreached Management System</title>
-    <!-- 页面特定的CSS -->
-    <link rel="stylesheet" th:href="@{/css/undeliverable-report/reasonMaintenance.css}">
+    <!-- DataTables -->
+    <link rel="stylesheet" th:href="@{/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css}">
+    <link rel="stylesheet" th:href="@{/plugins/datatables-responsive/css/responsive.bootstrap4.min.css}">
+    <link rel="stylesheet" th:href="@{/plugins/datatables-buttons/css/buttons.bootstrap4.min.css}">
 </head>
 <body>
     <div id="main-content">
@@ -23,16 +25,8 @@
                     </button>
                 </div>
             </div>
-            <div class="card-body table-responsive p-0">
-                <!-- 空数据提示 -->
-                <div id="emptyState" class="text-center p-5" style="display: none;">
-                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No Reasons Found</h5>
-                    <p class="text-muted mb-3">Click the "Add Reason" button to create a new reason.</p>
-                </div>
-                
-                <!-- 数据表格 -->
-                <table class="table table-hover table-striped" id="reasonTable">
+            <div class="card-body">
+                <table id="reasonTable" class="table table-bordered table-striped">
                     <thead>
                         <tr>
                             <th style="width: 80px;" class="text-center">ID</th>
@@ -41,14 +35,13 @@
                             <th style="width: 120px;" class="text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="reasonTableBody">
-                        <!-- 数据行将由JavaScript动态生成 -->
+                    <tbody>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 添加/编辑原因的模态框 -->
+        <!-- Add/Edit Modal -->
         <div class="modal fade" id="reasonModal" tabindex="-1" role="dialog" aria-labelledby="reasonModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -75,7 +68,7 @@
             </div>
         </div>
 
-        <!-- 操作日志模态框 -->
+        <!-- Operation Logs Modal -->
         <div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="logModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
@@ -87,7 +80,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="timeline" id="logTimeline">
-                            <!-- 日志内容将由JavaScript动态生成 -->
+                            <!-- Log content will be dynamically generated -->
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -98,7 +91,14 @@
         </div>
     </div>
 
-    <!-- 页面特定的JS -->
+    <!-- DataTables  & Plugins -->
+    <script th:src="@{/plugins/datatables/jquery.dataTables.min.js}"></script>
+    <script th:src="@{/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js}"></script>
+    <script th:src="@{/plugins/datatables-responsive/js/dataTables.responsive.min.js}"></script>
+    <script th:src="@{/plugins/datatables-responsive/js/responsive.bootstrap4.min.js}"></script>
+    <script th:src="@{/plugins/datatables-buttons/js/dataTables.buttons.min.js}"></script>
+    <script th:src="@{/plugins/datatables-buttons/js/buttons.bootstrap4.min.js}"></script>
+    <!-- Page specific JS -->
     <script th:src="@{/js/undeliverable-report/base.js}"></script>
     <script th:src="@{/js/undeliverable-report/reasonMaintenance.js}"></script>
 </body>

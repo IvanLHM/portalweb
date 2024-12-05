@@ -22,6 +22,15 @@ public class UnreachedAccountService {
     public List<UnreachedAccount> findAll() {
         return unreachedAccountMapper.findAll();
     }
+
+    public List<UnreachedAccount> findPage(int pageSize, int pageNum) {
+        int offset = (pageNum - 1) * pageSize;
+        return unreachedAccountMapper.findPage(pageSize, offset);
+    }
+
+    public long count() {
+        return unreachedAccountMapper.count();
+    }
     
     public UnreachedAccount findByAccountNo(String accountNo) {
         return unreachedAccountMapper.findByAccountNo(accountNo);

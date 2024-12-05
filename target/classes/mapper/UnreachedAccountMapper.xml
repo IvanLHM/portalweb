@@ -17,6 +17,26 @@
         ORDER BY a.created_time DESC
     </select>
     
+    <select id="findPage" resultType="com.example.demo.dto.UnreachedAccount">
+        SELECT 
+            a.id,
+            a.accountNo,
+            a.reason_id as reasonId,
+            r.description as reasonDescription,
+            a.created_time as createdTime,
+            a.created_by as createdBy,
+            a.last_modified_by as lastModifiedBy,
+            a.last_modified_time as lastModifiedTime
+        FROM tbl_unreached_acct a
+        LEFT JOIN tbl_unreached_reason r ON a.reason_id = r.id
+        ORDER BY a.created_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM tbl_unreached_acct
+    </select>
+    
     <select id="findByAccountNo" resultType="com.example.demo.dto.UnreachedAccount">
         SELECT 
             id,

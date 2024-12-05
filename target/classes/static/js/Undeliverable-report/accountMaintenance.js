@@ -35,10 +35,7 @@ class AccountMaintenancePage extends BasePage {
 
     // 私有选择器
     static #selectors = {
-        table: {
-            container: '#accountTable',
-            body: '#accountTableBody'
-        },
+        table: '#accountTable',
         modal: {
             container: '#accountModal',
             label: '#accountModalLabel'
@@ -55,9 +52,6 @@ class AccountMaintenancePage extends BasePage {
             add: '#addAccountBtn',
             save: '#saveAccountBtn'
         },
-        states: {
-            empty: '#emptyState'
-        },
         logs: {
             modal: '#logModal',
             label: '#logModalLabel',
@@ -70,13 +64,11 @@ class AccountMaintenancePage extends BasePage {
         this.container = document.querySelector('.content-wrapper');
         this.elements = this.initElements();
         this.initFormValidation();
-        this.loadData();
+        this.initDataTable();
         this.loadReasonsList();
-        this.debouncedSave = this.debounce(this.saveAccount.bind(this), 300);
         this.bindEvents();
     }
 
-    // 使用代理模式初始化元素
     initElements() {
         const cache = new Map();
 
@@ -123,65 +115,142 @@ class AccountMaintenancePage extends BasePage {
     }
 
     bindEvents() {
-        // 静态事件
         this.elements.buttons?.add?.addEventListener('click', () => this.showModal());
-        this.elements.buttons?.save?.addEventListener('click', () => this.debouncedSave());
+        this.elements.buttons?.save?.addEventListener('click', () => this.saveAccount());
         this.elements.modal?.container?.addEventListener('hidden.bs.modal', () => this.resetForm());
-
-        // 动态事件
-        this.elements.table?.body?.addEventListener('click', e => this.handleTableAction(e));
     }
 
-    handleTableAction(e) {
-        const target = e.target.closest('button');
-        if (!target) return;
-
-        const tr = target.closest('tr');
-        if (!tr) return;
-
-        const id = tr.dataset.id;
-        if (!id) return;
-
+    initDataTable() {
         try {
-            if (target.classList.contains('edit-btn')) {
-                const account = target.dataset.account;
-                const reasonId = target.dataset.reasonId;
-                this.editAccount(id, account, reasonId);
-            } else if (target.classList.contains('delete-btn')) {
-                e.preventDefault();
-                this.deleteAccount(id);
-            } else if (target.classList.contains('logs-btn')) {
-                this.showOperationLogs(id, target.dataset.account);
-            }
-        } catch (error) {
-            console.error('Error handling table action:', error);
-            this.showMessage('An error occurred while processing your request', 'error');
-        }
-    }
-
-    async loadData() {
-        const overlay = this.showLoading('Loading accounts...');
-        try {
-            const response = await fetch('/account-maintenance/list');
-            if (!response.ok) throw new Error('Network response was not ok');
+            const self = this;
             
-            const accounts = await response.json();
-            this.handleDataLoaded(accounts);
+            // 如果已经初始化过，先销毁
+            if (this.dataTable) {
+                this.dataTable.destroy();
+                this.dataTable = null;
+            }
+
+            // 重新初始化 DataTable
+            this.dataTable = $(this.elements.table).DataTable({
+                destroy: true,
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false,
+                serverSide: true,
+                processing: true,
+                searching: false,
+                ordering: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                displayStart: 0,
+                stateSave: false,
+                deferRender: true,
+                dom: '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"p>>',
+                ajax: function(data, callback, settings) {
+                    $.ajax({
+                        url: '/account-maintenance/list',
+                        type: 'GET',
+                        data: {
+                            draw: data.draw,
+                            start: data.start,
+                            length: data.length
+                        },
+                        success: function(res) {
+                            callback(res);
+                        },
+                        error: function(xhr, error, thrown) {
+                            self.showMessage('Failed to load data: ' + error, 'error');
+                        }
+                    });
+                },
+                columns: [
+                    { 
+                        data: 'accountNo',
+                        className: 'text-center'
+                    },
+                    { 
+                        data: 'reasonDescription',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        data: 'lastModifiedTime',
+                        className: 'text-center',
+                        render: function(data) {
+                            return data ? `<span class="badge badge-success">${data}</span>` : '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        className: 'text-center',
+                        render: function(data) {
+                            return `
+                                <div class="btn-group">
+                                    <button class="btn btn-info btn-sm edit-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Edit"
+                                            onclick="window.accountPage.editAccount(${data.id}, '${self.escapeHtml(data.accountNo)}', ${data.reasonId})">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm delete-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Delete"
+                                            onclick="window.accountPage.deleteAccount(${data.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button class="btn btn-primary btn-sm logs-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Operation Logs"
+                                            onclick="window.accountPage.showOperationLogs(${data.id}, '${self.escapeHtml(data.accountNo)}')">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: "No data available",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    lengthMenu: "Show _MENU_ entries",
+                    loadingRecords: "Loading...",
+                    processing: "Processing...",
+                    zeroRecords: "No matching records found",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                drawCallback: function(settings) {
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            });
+
+            // 监听分页事件
+            this.dataTable.on('page.dt', function() {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            });
+
+            // 监听长度改变事件
+            this.dataTable.on('length.dt', function() {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            });
         } catch (error) {
-            console.error('Failed to load accounts:', error);
-            this.showMessage('Failed to load accounts', 'error');
-        } finally {
-            this.hideLoading(overlay);
+            console.error('Error initializing DataTable:', error);
+            this.showMessage('Failed to initialize table: ' + error, 'error');
         }
     }
 
     async loadReasonsList() {
         const overlay = this.showLoading('Loading reasons...');
         try {
-            const response = await fetch('/reasons/list');
+            const response = await fetch('/reasons-maintenance/list?draw=1&start=0&length=1000');
             if (!response.ok) throw new Error('Failed to load reasons');
             
-            const reasons = await response.json();
+            const result = await response.json();
+            const reasons = result.data || [];
             const select = this.elements.form.inputs.reason;
             
             if (select) {
@@ -198,73 +267,10 @@ class AccountMaintenancePage extends BasePage {
         }
     }
 
-    handleDataLoaded(accounts) {
-        const hasAccounts = accounts?.length > 0;
-        this.toggleView(hasAccounts);
-
-        if (hasAccounts) {
-            const html = accounts.map(this.createAccountRow.bind(this)).join('');
-            this.elements.table.body.innerHTML = html;
-        }
-    }
-
-    createAccountRow(account) {
-        return `
-            <tr data-id="${account.id}">
-                <td>${this.escapeHtml(account.accountNo)}</td>
-                <td>${this.escapeHtml(account.reasonDescription || '-')}</td>
-                <td>${account.lastModifiedTime || '-'}</td>
-                <td>
-                    <div class="btn-group">
-                        ${this.createActionButtons(account)}
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    createActionButtons(account) {
-        return `
-            <button class="btn btn-sm btn-info edit-btn" 
-                    data-account="${this.escapeHtml(account.accountNo)}"
-                    data-reason-id="${String(account.reasonId)}"
-                    title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger delete-btn" 
-                    title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-sm btn-primary logs-btn" 
-                    data-account="${this.escapeHtml(account.accountNo)}"
-                    title="Operation Logs">
-                <i class="fas fa-list-alt"></i>
-            </button>
-        `;
-    }
-
     initFormValidation() {
         $(this.elements.form.container).validate({
-            rules: {
-                account: {
-                    required: true,
-                    minlength: 3,
-                    maxlength: 100
-                },
-                reason: {
-                    required: true
-                }
-            },
-            messages: {
-                account: {
-                    required: "Please enter account number",
-                    minlength: "Account number must be at least 3 characters",
-                    maxlength: "Account number cannot exceed 100 characters"
-                },
-                reason: {
-                    required: "Please select a reason"
-                }
-            },
+            rules: AccountMaintenancePage.#config.validation.rules,
+            messages: AccountMaintenancePage.#config.validation.messages,
             errorElement: 'div',
             errorClass: 'invalid-feedback',
             highlight: element => $(element).addClass('is-invalid'),
@@ -273,13 +279,13 @@ class AccountMaintenancePage extends BasePage {
     }
 
     async saveAccount() {
-        if (!this.validateForm()) return;
-
-        const overlay = this.showLoading('Saving account...');
-        const id = this.elements.form.inputs.id.value;
-        const data = this.getFormData();
-        
         try {
+            if (!this.validateForm()) return;
+
+            const overlay = this.showLoading('Saving account...');
+            const id = this.elements.form.inputs.id.value;
+            const data = this.getFormData();
+            
             const response = await fetch(
                 id ? `/account-maintenance/${id}` : '/account-maintenance', 
                 {
@@ -291,16 +297,33 @@ class AccountMaintenancePage extends BasePage {
                 }
             );
 
-            if (!response.ok) throw await response.text();
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
 
+            // 先关闭等待层
+            this.hideLoading(overlay);
+            
+            // 关闭模态框
             $(this.elements.modal.container).modal('hide');
+            
+            // 显示成功消息
             this.showMessage(`Account ${id ? 'updated' : 'created'} successfully`);
-            await this.loadData();
+            
+            // 等待模态框完全关闭后再刷新数据
+            setTimeout(() => {
+                if (this.dataTable) {
+                    this.dataTable.ajax.reload(null, false);
+                }
+            }, 300);
+
         } catch (error) {
+            if (overlay) {
+                this.hideLoading(overlay);
+            }
             console.error('Error:', error);
             this.showMessage(`Failed to ${id ? 'update' : 'create'} account: ${error}`, 'error');
-        } finally {
-            this.hideLoading(overlay);
         }
     }
 
@@ -322,7 +345,14 @@ class AccountMaintenancePage extends BasePage {
         this.elements.modal.label.textContent = id ? 
             AccountMaintenancePage.#config.modal.editTitle : 
             AccountMaintenancePage.#config.modal.addTitle;
-        $(this.elements.modal.container).modal('show');
+        
+        // 确保原因列表已加载
+        this.loadReasonsList().then(() => {
+            $(this.elements.modal.container).modal('show');
+        }).catch(error => {
+            console.error('Error loading reasons:', error);
+            this.showMessage('Failed to load reasons list', 'error');
+        });
     }
 
     resetForm() {
@@ -331,38 +361,48 @@ class AccountMaintenancePage extends BasePage {
         this.elements.form.inputs.id.value = '';
         $(form).validate().resetForm();
         $(form).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-        $(form).find('.invalid-feedback').hide();
-    }
-
-    toggleView(hasAccounts) {
-        $(this.elements.table.container).toggle(hasAccounts);
-        $(this.elements.states.empty).toggle(!hasAccounts);
     }
 
     editAccount(id, account, reasonId) {
         this.showModal(id);
         this.elements.form.inputs.account.value = account;
-        this.elements.form.inputs.reason.value = reasonId;
+        this.elements.form.inputs.reason.value = String(reasonId);
+        
+        // 触发 change 事件以确保表单验证状态更新
+        $(this.elements.form.inputs.reason).trigger('change');
     }
 
     async deleteAccount(id) {
-        if (!id || !confirm(AccountMaintenancePage.#config.modal.deleteConfirm)) return;
-
-        const overlay = this.showLoading('Deleting account...');
         try {
+            if (!id || !confirm(AccountMaintenancePage.#config.modal.deleteConfirm)) return;
+
+            const overlay = this.showLoading('Deleting account...');
+            
             const response = await fetch(`/account-maintenance/${id}`, {
                 method: 'DELETE'
             });
             
-            if (!response.ok) throw await response.text();
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText);
+            }
             
+            // 先关闭等待层
+            this.hideLoading(overlay);
+            
+            // 显示成功消息
             this.showMessage('Account deleted successfully');
-            await this.loadData();
+            
+            // 刷新数据
+            if (this.dataTable) {
+                this.dataTable.ajax.reload(null, false);
+            }
         } catch (error) {
+            if (overlay) {
+                this.hideLoading(overlay);
+            }
             console.error('Delete failed:', error);
             this.showMessage('Failed to delete account: ' + error, 'error');
-        } finally {
-            this.hideLoading(overlay);
         }
     }
 
@@ -470,6 +510,24 @@ class AccountMaintenancePage extends BasePage {
             'DELETE': 'danger'
         };
         return classes[type] || 'secondary';
+    }
+
+    getOperationIcon(type) {
+        const icons = {
+            'CREATE': 'fas fa-plus',
+            'UPDATE': 'fas fa-edit',
+            'DELETE': 'fas fa-trash'
+        };
+        return icons[type] || 'fas fa-info';
+    }
+
+    getOperationBgClass(type) {
+        const classes = {
+            'CREATE': 'bg-success',
+            'UPDATE': 'bg-info',
+            'DELETE': 'bg-danger'
+        };
+        return classes[type] || 'bg-secondary';
     }
 }
 

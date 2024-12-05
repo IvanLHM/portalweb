@@ -8,10 +8,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
-@RequestMapping("/account-maintenance")  // 更新路径以反映维护功能
+@RequestMapping("/account-maintenance")
 public class AccountMaintenanceController {
     
     @Autowired
@@ -19,14 +21,32 @@ public class AccountMaintenanceController {
     
     @GetMapping
     public String accountPage(Model model) {
-        model.addAttribute("currentPage", "accountMaintenance");  // 更新页面标识
-        return "undeliverable-report/accountMaintenance";  // 更新视图名
+        model.addAttribute("currentPage", "accountMaintenance");
+        return "undeliverable-report/accountMaintenance";
     }
     
     @GetMapping("/list")
     @ResponseBody
-    public ResponseEntity<List<UnreachedAccount>> getAllAccounts() {
-        return ResponseEntity.ok(unreachedAccountService.findAll());
+    public Map<String, Object> getAllAccounts(
+            @RequestParam(value = "draw", defaultValue = "1") int draw,
+            @RequestParam(value = "start", defaultValue = "0") int start,
+            @RequestParam(value = "length", defaultValue = "10") int length) {
+        
+        // 计算页码
+        int pageNum = (start / length) + 1;
+        
+        // 获取总记录数和分页数据
+        long total = unreachedAccountService.count();
+        List<UnreachedAccount> data = unreachedAccountService.findPage(length, pageNum);
+        
+        // 构造 DataTable 需要的响应格式
+        Map<String, Object> response = new HashMap<>();
+        response.put("draw", draw);
+        response.put("recordsTotal", total);
+        response.put("recordsFiltered", total);
+        response.put("data", data);
+        
+        return response;
     }
     
     @GetMapping("/{accountNo}")

@@ -1,8 +1,8 @@
 /**
- * 原因维护页面类
+ * Reason Maintenance Page Class
  */
 class ReasonMaintenancePage extends BasePage {
-    // 私有配置
+    // Private Configuration
     static #config = {
         modal: {
             addTitle: 'Add Reason',
@@ -27,12 +27,9 @@ class ReasonMaintenancePage extends BasePage {
         }
     };
 
-    // 私有选择器
+    // Private Selectors
     static #selectors = {
-        table: {
-            container: '#reasonTable',
-            body: '#reasonTableBody'
-        },
+        table: '#reasonTable',
         modal: {
             container: '#reasonModal',
             label: '#reasonModalLabel'
@@ -48,9 +45,6 @@ class ReasonMaintenancePage extends BasePage {
             add: '#addReasonBtn',
             save: '#saveReasonBtn'
         },
-        states: {
-            empty: '#emptyState'
-        },
         logs: {
             modal: '#logModal',
             label: '#logModalLabel',
@@ -63,12 +57,11 @@ class ReasonMaintenancePage extends BasePage {
         this.container = document.querySelector('.content-wrapper');
         this.elements = this.initElements();
         this.initFormValidation();
-        this.loadData();
+        this.initDataTable();
         this.debouncedSave = this.debounce(this.saveReason.bind(this), 300);
         this.bindEvents();
     }
 
-    // 使用代理模式初始化元素
     initElements() {
         const cache = new Map();
 
@@ -115,100 +108,129 @@ class ReasonMaintenancePage extends BasePage {
     }
 
     bindEvents() {
-        // 静态事件
         this.elements.buttons?.add?.addEventListener('click', () => this.showModal());
         this.elements.buttons?.save?.addEventListener('click', () => this.debouncedSave());
         this.elements.modal?.container?.addEventListener('hidden.bs.modal', () => this.resetForm());
-
-        // 动态事件
-        this.elements.table?.body?.addEventListener('click', e => this.handleTableAction(e));
     }
 
-    handleTableAction(e) {
-        const target = e.target.closest('button');
-        if (!target) return;
-
-        const tr = target.closest('tr');
-        if (!tr) return;
-
-        const id = tr.dataset.id;
-        if (!id) return;
-
+    initDataTable() {
         try {
-            if (target.classList.contains('edit-btn')) {
-                const description = target.dataset.description;
-                this.editReason(id, description);
-            } else if (target.classList.contains('delete-btn')) {
-                e.preventDefault();
-                this.deleteReason(id);
-            } else if (target.classList.contains('logs-btn')) {
-                this.showOperationLogs(id, id);
-            }
-        } catch (error) {
-            console.error('Error handling table action:', error);
-            this.showMessage('An error occurred while processing your request', 'error');
-        }
-    }
-
-    async loadData() {
-        const overlay = this.showLoading('Loading reasons...');
-        try {
-            const response = await fetch('/reasons-maintenance/list');
-            if (!response.ok) throw new Error('Network response was not ok');
+            const self = this;
             
-            const reasons = await response.json();
-            this.handleDataLoaded(reasons);
+            // 如果已经初始化过，先销毁
+            if (this.dataTable) {
+                this.dataTable.destroy();
+                this.dataTable = null;
+            }
+
+            // 重新初始化 DataTable
+            this.dataTable = $(this.elements.table).DataTable({
+                destroy: true,
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false,
+                serverSide: true,
+                processing: true,
+                searching: false,
+                ordering: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                displayStart: 0,
+                stateSave: false,
+                deferRender: true,
+                dom: '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"p>>',
+                ajax: function(data, callback, settings) {
+                    $.ajax({
+                        url: '/reasons-maintenance/list',
+                        type: 'GET',
+                        data: {
+                            draw: data.draw,
+                            start: data.start,
+                            length: data.length
+                        },
+                        success: function(res) {
+                            callback(res);
+                        },
+                        error: function(xhr, error, thrown) {
+                            self.showMessage('Failed to load data: ' + error, 'error');
+                        }
+                    });
+                },
+                columns: [
+                    { 
+                        data: 'id',
+                        className: 'text-center'
+                    },
+                    { 
+                        data: 'description'
+                    },
+                    { 
+                        data: 'lastModifiedTime',
+                        className: 'text-center',
+                        render: function(data) {
+                            return data ? `<span class="badge badge-success">${data}</span>` : '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        className: 'text-center',
+                        render: function(data) {
+                            return `
+                                <div class="btn-group">
+                                    <button class="btn btn-info btn-sm edit-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Edit"
+                                            onclick="window.reasonPage.editReason(${data.id}, '${self.escapeHtml(data.description)}')">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm delete-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Delete"
+                                            onclick="window.reasonPage.deleteReason(${data.id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button class="btn btn-primary btn-sm logs-btn" 
+                                            data-toggle="tooltip" data-placement="top" title="Operation Logs"
+                                            onclick="window.reasonPage.showOperationLogs(${data.id}, ${data.id})">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: "No data available",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    lengthMenu: "Show _MENU_ entries",
+                    loadingRecords: "Loading...",
+                    processing: "Processing...",
+                    zeroRecords: "No matching records found",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                drawCallback: function(settings) {
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            });
+
+            // 监听分页事件
+            this.dataTable.on('page.dt', function() {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            });
+
+            // 监听长度改变事件
+            this.dataTable.on('length.dt', function() {
+                $('[data-toggle="tooltip"]').tooltip('dispose');
+            });
         } catch (error) {
-            console.error('Failed to load reasons:', error);
-            this.showMessage('Failed to load reasons', 'error');
-        } finally {
-            this.hideLoading(overlay);
+            console.error('Error initializing DataTable:', error);
+            this.showMessage('Failed to initialize table: ' + error, 'error');
         }
-    }
-
-    handleDataLoaded(reasons) {
-        const hasReasons = reasons?.length > 0;
-        this.toggleView(hasReasons);
-
-        if (hasReasons) {
-            // 按照 id 排序
-            const sortedReasons = reasons.sort((a, b) => a.id - b.id);
-            const html = sortedReasons.map(this.createReasonRow.bind(this)).join('');
-            this.elements.table.body.innerHTML = html;
-        }
-    }
-
-    createReasonRow(reason) {
-        return `
-            <tr data-id="${reason.id}">
-                <td style="width: 80px;" class="text-center">${reason.id}</td>
-                <td>${this.escapeHtml(reason.description)}</td>
-                <td style="width: 180px;" class="text-center">${reason.lastModifiedTime || '-'}</td>
-                <td style="width: 120px;" class="text-center">
-                    <div class="btn-group">
-                        ${this.createActionButtons(reason)}
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-    createActionButtons(reason) {
-        return `
-            <button class="btn btn-sm btn-info edit-btn" 
-                    data-description="${this.escapeHtml(reason.description)}"
-                    title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger delete-btn" 
-                    title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
-            <button class="btn btn-sm btn-primary logs-btn" 
-                    title="Operation Logs">
-                <i class="fas fa-list-alt"></i>
-            </button>
-        `;
     }
 
     initFormValidation() {
@@ -225,7 +247,6 @@ class ReasonMaintenancePage extends BasePage {
             }
         });
 
-        // 添加实时验证
         const descInput = this.elements.form.inputs.description;
         if (descInput) {
             descInput.addEventListener('input', e => {
@@ -268,7 +289,7 @@ class ReasonMaintenancePage extends BasePage {
 
             $(this.elements.modal.container).modal('hide');
             this.showMessage(`Reason ${id ? 'updated' : 'created'} successfully`);
-            await this.loadData();
+            this.dataTable.ajax.reload();
         } catch (error) {
             console.error('Error:', error);
             this.showMessage(`Failed to ${id ? 'update' : 'create'} reason: ${error}`, 'error');
@@ -306,11 +327,6 @@ class ReasonMaintenancePage extends BasePage {
         $(form).find('.invalid-feedback').hide();
     }
 
-    toggleView(hasReasons) {
-        $(this.elements.table.container).toggle(hasReasons);
-        $(this.elements.states.empty).toggle(!hasReasons);
-    }
-
     async deleteReason(id) {
         if (!id || !confirm(ReasonMaintenancePage.#config.modal.deleteConfirm)) return;
 
@@ -323,7 +339,7 @@ class ReasonMaintenancePage extends BasePage {
             if (!response.ok) throw await response.text();
             
             this.showMessage('Reason deleted successfully');
-            await this.loadData();
+            this.dataTable.ajax.reload();
         } catch (error) {
             console.error('Delete failed:', error);
             this.showMessage('Failed to delete reason: ' + error, 'error');
@@ -337,12 +353,6 @@ class ReasonMaintenancePage extends BasePage {
         this.elements.form.inputs.description.value = description;
     }
 
-    /**
-     * 防抖函数
-     * @param {Function} func 需要防抖的函数
-     * @param {number} wait 等待时间（毫秒）
-     * @returns {Function} 防抖后的函数
-     */
     debounce(func, wait) {
         let timeout;
         return (...args) => {
